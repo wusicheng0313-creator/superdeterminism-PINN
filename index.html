@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>超决定论 × PINN · 研究档案</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Hiragino Sans GB","PingFang SC",sans-serif;color:#26282e;background:#f6f7f9;line-height:1.7}
+header{background:linear-gradient(135deg,#1a2340,#3a3055);color:#fff;padding:52px 24px 38px;text-align:center}
+header h1{margin:0 0 10px;font-size:35px;letter-spacing:1px}
+header .en{opacity:.6;font-size:16.5px;font-style:italic;margin:2px}
+header p{margin:5px auto;opacity:.85;font-size:15.5px;max-width:760px}
+.badge{display:inline-block;margin-top:14px;padding:6px 16px;background:rgba(255,255,255,.15);border-radius:20px;font-size:14px}
+nav{position:sticky;top:0;z-index:20;background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.09);padding:11px 8px;text-align:center}
+nav a{display:inline-block;margin:3px 5px;padding:6px 13px;color:#3a6ea5;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600}
+nav a:hover{background:#eef2f8}
+.wrap{max-width:1140px;margin:0 auto;padding:26px 20px 70px}
+.mindmap{text-align:center;margin:24px 0 10px}
+.mindmap img{max-width:100%;border:1px solid #e3e6ea;border-radius:10px;box-shadow:0 3px 16px rgba(0,0,0,.07)}
+.mindmap .cap{color:#7a7a7a;font-size:14px;margin-top:8px}
+.lead{background:#fff;border-radius:12px;padding:22px 26px;margin:22px 0;box-shadow:0 2px 12px rgba(0,0,0,.05);font-size:16px;color:#3a3f4a}
+.lead h2{margin:0 0 10px;font-size:21px;color:#1a2340}
+h2.sec{font-size:24px;border-left:5px solid #3a6ea5;padding-left:13px;margin:46px 0 14px}
+.refs{background:#fff;border-radius:12px;padding:20px 26px;margin:22px 0;box-shadow:0 2px 12px rgba(0,0,0,.05);font-size:15px;color:#3a3f4a;line-height:1.7}
+.refs .rg{font-weight:700;color:#28527a;margin:16px 0 6px;font-size:15.5px}
+.refs .rg:first-child{margin-top:0}
+.refs ul{margin:4px 0 4px;padding-left:24px}
+.refs li{margin:6px 0}
+.refs .kind{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:7px;vertical-align:middle}
+.refs .k-lit{background:#e8f0f8;color:#28527a}
+.refs .k-con{background:#eef4ec;color:#2e6b45}
+.refs a{color:#2f6fb0;text-decoration:none;border-bottom:1px solid #cfe0f0}
+.refs a:hover{border-bottom-color:#2f6fb0}
+.refs .note{font-size:13.5px;color:#7a828c;margin-top:14px;border-top:1px solid #eceef1;padding-top:10px}
+.stage{background:#fff;border-radius:14px;padding:26px 28px;margin:26px 0;box-shadow:0 2px 14px rgba(0,0,0,.06)}
+.stage-h{border-left:6px solid;padding-left:14px;margin-bottom:12px;cursor:pointer;position:relative;user-select:none}
+.stage-h:hover{opacity:.85}
+.fold{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:22px;transition:transform .2s}
+.stage.collapsed .fold{transform:translateY(-50%) rotate(-90deg)}
+.stage.collapsed .stage-body{display:none}
+.stage.collapsed{padding-bottom:20px}
+.stage-name{font-size:25px;font-weight:800;margin-right:14px}
+.stage-sub{font-size:16.5px;color:#888}
+.intro{color:#454b56;font-size:16px;margin:6px 0 20px;padding:0 2px}
+.intro p{margin:0 0 11px}
+.intro p:last-child{margin-bottom:0}
+.prologue{background:#f0f4f9;border-left:4px solid #9db4cf;border-radius:8px;margin:12px 0 18px;font-size:15px;color:#3f4650;line-height:1.78}
+.innerbox{background:#eef3f9;border-left:4px solid #9db4cf;border-radius:8px;margin:14px 0;font-size:14.5px;color:#3f4650;line-height:1.75}
+.cbox-h{padding:12px 20px;font-weight:700;color:#28527a;cursor:pointer;user-select:none;font-size:15px}
+.cbox-b{padding:0 20px 14px}
+.collapsed .cbox-b{display:none}
+.collapsed .fold2{transform:rotate(0deg)}
+.prologue:not(.collapsed) .fold2,.innerbox:not(.collapsed) .fold2{transform:rotate(90deg)}
+.innerbox p{margin:0 0 9px} .innerbox p:last-child{margin-bottom:0}
+.prologue p{margin:0 0 11px}
+.prologue p:last-child{margin-bottom:0}
+.threeways{margin:10px 0 12px;padding-left:26px}
+.threeways li{margin:5px 0;font-size:15.5px}
+.threeways li:last-child{color:#c0392b}
+.modellist{margin:10px 0 12px;padding-left:26px}
+.modellist li{margin:6px 0;font-size:14.5px}
+.term{color:#3a6ea5;font-weight:700;cursor:pointer;border-bottom:1.5px dashed #3a6ea5;padding:0 1px;white-space:nowrap}
+.term:hover{background:#e5edf6}
+#gloss{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200}
+#gloss .box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;
+  max-width:640px;width:90%;max-height:80%;overflow:auto;padding:26px 30px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#gloss h3{margin:0 0 14px;color:#3a6ea5;font-size:20px}
+#gloss #glossB{font-size:15px;line-height:1.85;color:#333}
+#gloss .close{position:absolute;top:14px;right:18px;cursor:pointer;color:#999;font-size:22px;border:none;background:none}
+.steps{display:block}
+.steps.msn{display:flex;align-items:flex-start;gap:20px}
+.mcol{flex:1;min-width:0}
+.step{box-sizing:border-box;background:#fafbfc;border:1px solid #eceef1;border-radius:11px;padding:16px 17px;margin:0 0 20px}
+.step-h{display:flex;align-items:center;margin-bottom:9px}
+.step-n{color:#fff;width:23px;height:23px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin-right:9px;flex:none}
+.step-t{font-weight:700;font-size:16.5px;color:#222}
+.lab,.res,.bd{font-size:14px;margin-bottom:7px;color:#4a4f58}
+.lab b{color:#3a6ea5} .res b{color:#2e8b57} .bd b{color:#c0392b}
+.bd{background:#fdf3f2;border-radius:6px;padding:7px 9px}
+.detail{background:#f4f8fc;border:1px solid #dce8f3;border-left:4px solid #3a6ea5;border-radius:8px;margin:10px 0 4px;font-size:14px;line-height:1.85;color:#3a3f47}
+.detail-h{padding:10px 15px;font-weight:700;color:#28527a;cursor:pointer;user-select:none;font-size:14px}
+.fold2{display:inline-block;margin-right:7px;transition:transform .2s}
+.detail:not(.collapsed) .fold2{transform:rotate(90deg)}
+.detail-b{padding:0 15px 12px}
+.detail.collapsed .detail-b{display:none}
+.detail b{color:#28527a}
+.detail .dh{font-size:14.5px;color:#28527a;font-weight:700;display:block;margin-bottom:6px}
+.detail ul{margin:6px 0 4px;padding-left:22px} .detail li{margin:5px 0}
+.formula{display:block;background:#fff;border:1px solid #cfe0f0;border-radius:6px;padding:9px 14px;margin:8px 0;font-family:'SFMono-Regular',Consolas,'Menlo',monospace;font-size:14px;color:#1f3b5c;overflow-x:auto}
+.formula sup,.formula sub{font-size:75%;line-height:0}
+.rad{border-top:1px solid currentColor;padding:0 2px 0 1px}
+.mbox{background:#fff;border:1px solid #dbe6f1;border-radius:7px;margin:8px 0}
+.mbox-h{padding:9px 13px;font-weight:700;color:#2a5b86;cursor:pointer;user-select:none;font-size:14.5px}
+.mbox-b{padding:0 14px 11px}
+.mbox.collapsed .mbox-b{display:none}
+.mbox .fold3{display:inline-block;margin-right:7px;transition:transform .2s;color:#3a6ea5}
+.mbox:not(.collapsed) .fold3{transform:rotate(90deg)}
+.contrib{margin-top:12px;padding:9px 12px;background:#eaf1f9;border-left:3px solid #3a6ea5;border-radius:6px;color:#28527a;font-weight:700;font-size:14px;line-height:1.7}
+.mimg{width:100%;border-radius:7px;border:1px solid #e3e8ee;margin:11px 0 5px;cursor:zoom-in}
+.cap{font-size:13px;color:#6a7280;line-height:1.7;margin-bottom:2px}
+.cap b{color:#3a4550}
+.step img{width:100%;border-radius:7px;border:1px solid #e8eaed;cursor:zoom-in;margin-top:6px;transition:transform .15s}
+.step img:hover{transform:scale(1.015)}
+.summary{margin-top:20px;padding:14px 18px;background:#f4f8f5;border-left:4px solid;border-radius:8px;font-size:15px;color:#3a4550}
+.summary b{color:#2e8b57}
+footer{text-align:center;color:#999;font-size:13.5px;padding:34px}
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;cursor:zoom-out}
+#lb img{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:96%;max-height:96%}
+</style></head>
+<body>
+<header>
+  <h1>超决定论 × PINN · 研究档案</h1>
+  <div class="en">The Black Box of Superdeterminism</div>
+  <p>用「可微不变集代理」进攻『契合宇宙的规则』——从贝尔定理的裂缝，到在测度为零的分形吸引子上端到端涌现量子关联</p>
+  <p style="font-size:14px;opacity:.7">全部结论均经120文件18040行代码审计并诚实降级：严格区分「关联曲线的复现下界」与「机制的真实互信息」</p>
+  <span class="badge">按研究阶段组织 · 已通过审计 · 无作弊 · 无假结论进入结论</span>
+</header>
+<nav><a href="#s1">第一阶段</a><a href="#s2">第二阶段</a><a href="#s3">第三阶段</a><a href="#s4">第四阶段</a><a href="#s5">第五阶段</a><a href="#s6">第六阶段</a> <a href="#board" style="color:#c0392b">严格边界</a>
+  <a href="#refs" style="color:#28527a">参考文献</a>
+  <a href="javascript:void(0)" onclick="foldAll(false)" style="color:#2e8b57">全部展开</a>
+  <a href="javascript:void(0)" onclick="foldAll(true)" style="color:#888">全部收起</a></nav>
+<div class="wrap">
+  <div class="mindmap">
+    <img src="images/研究框架思维导图.png" alt="研究框架思维导图">
+    <div class="cap">研究框架总览 · 六大阶段（点击导航或图中脉络对照阅读）</div>
+  </div>
+
+  <div class="lead">
+    <h2>研究思路总览</h2>
+    贝尔定理指出：想同时保住决定论与局域性，只能放弃『测量独立性』——这就是超决定论。但放弃它需要隐变量λ
+    "偷看"测量设置，代价是互信息 I(λ;设置)。本研究的主线是：<b>把这个哲学命题转化为可计算的工程问题</b>——
+    在满足no-signaling、不作弊的前提下，构造一个满足四条硬性质(高维/分形测度为零/内禀cos/可微)的动力学规则，
+    让量子关联-cos(θ)从中<b>内禀涌现</b>，而非手工植入。六个阶段依次是：明确问题(①)、搭建可微工具与度量纪律(②)、
+    复现并推广已知结果(③)、触碰最硬的『分形·测度为零』性质(④)、用符号回归找到可读公式并端到端涌现所有环节(⑤)、
+    以及贯穿始终的严谨审计与诚实降级(⑥)。
+  </div>
+
+  <h2 class="sec">研究进度 · 六大阶段</h2>
+  <section class="stage" id="s1">
+      <div class="stage-h" style="border-color:#3a6ea5" onclick="toggleStage(this)">
+        <span class="stage-name" style="color:#3a6ea5">第一阶段 · 问题与目标</span>
+        <span class="stage-sub">为什么做这个研究，要攻克什么</span>
+        <span class="fold" style="color:#3a6ea5">▾</span>
+      </div>
+      <div class="stage-body">
+        <div class="prologue"><div class="cbox-h" onclick="toggleDetail(this)"><span class="fold2">▸</span>背景故事 · 贝尔定理是怎么出现的(点击展开/收起)</div><div class="cbox-b">
+<p><b>【契机 · EPR 佯谬】</b>1935 年，爱因斯坦(<b>E</b>instein)、波多尔斯基(<b>P</b>odolsky)、罗森(<b>R</b>osen)
+三人发表论文(史称 <b>EPR</b>，取三人姓氏首字母)，质疑量子力学『不完备』。契机是<b>量子纠缠</b>：两个曾相互作用的粒子分开后，
+测量其一会瞬间「决定」另一个的状态，无论相距多远。爱因斯坦称之为『幽灵般的超距作用』(spooky action at a distance)，
+认为这荒谬——他相信粒子测量前就有确定值，只是被一组尚未可知的『隐变量』λ 决定，量子的随机只是我们的无知，宇宙本质仍是<b>决定论</b>且<b>局域</b>的。</p>
+
+<p><b>【贝尔的决定性一步】</b>这个「量子 vs 隐变量」的争论几十年停留在哲学层面，无法用实验分辨。1964 年，约翰·贝尔(John Bell)证明：
+若 EPR 为真(存在局域隐变量、且测量设置与 λ 无关)，则两地测量的关联必然满足一个不等式
+—— <span class="term" onclick="showGloss('贝尔不等式')">贝尔不等式 ⓘ</span>(其可实验形式即
+<span class="term" onclick="showGloss('CHSH')">CHSH ⓘ</span>)。这第一次把哲学之争变成一道能被实验判定的数学题。</p>
+
+<p><b>【实验的裁决】</b>后续实验反复测得关联超出不等式(CHSH 形式下 <b>S≈2.828 > 2</b>)，<b>违反了贝尔不等式</b>
+—— 意味着 EPR 的三条前提至少有一条不成立。三条出路，各对应一种物理诠释：</p>
+
+<ul class="threeways">
+  <li>放弃<b>局域性</b> → 玻姆力学(承认超光速影响)</li>
+  <li>放弃<b>实在性</b> → 哥本哈根诠释(测量才产生结果)</li>
+  <li><b>放弃测量独立性 → 超决定论（本研究选这条）</b></li>
+</ul>
+
+<p><b>【贝尔本人怎么看超决定论？】</b>有意思的是，提出不等式的贝尔本人就想到了这第三条路。在 1985 年 BBC 的一次访谈里(收录于《The Ghost in the Atom》, 1986)，
+他亲口承认：确实<b>存在一条逃脱『幽灵般超距作用』的出路</b>——只要假设宇宙是彻底决定论的，连实验者『选择测哪个方向』这个动作本身也早已被预定，
+那么『粒子 A 需要超光速地知道 B 那边测了什么』这个难题就消失了，因为宇宙(包括粒子 A)『本来就知道』会测什么、结果是什么。
+但贝尔<b>并不看好</b>这条路：他觉得『实验者连选择的自由都没有』这个假设太不吸引人，所以没有认真采纳。换句话说，超决定论从一开始就是贝尔亲手指出、却又亲手搁置的一条『逻辑上成立、心理上难以接受』的出路——本研究要做的，正是把这条被搁置的路认真算到底。</p>
+
+<p><b>【顺带说清一个关键词：测量独立性】</b>上面『放弃测量独立性』是超决定论的核心，这里说清它是什么。<b>测量独立性</b>(measurement independence，又称统计独立/自由选择)是贝尔定理的一条隐含假设：<b>实验者选择测哪个方向，与被测粒子的隐变量 λ 无关</b>——λ 不『知道』你会怎么选，双方在统计上互相独立。
+经典直觉认为这天经地义：我要测哪个方向，是我此刻的自由决定，怎么会和几百年前就出发的粒子扯上关系？正因如此，贝尔推导中才能自由假设『实验者本可以选任意方向』。而超决定论正是<b>放弃</b>这条假设：如果 λ 与测量设置源自同一个被决定的宇宙、彼此相关，那么『实验者能自由independent地选设置』就不再成立，贝尔不等式的推导前提被抽掉，量子关联可以超越经典界而无需超距作用。这个『λ 与设置为什么会相关』，正是后面『不变集理论』要用几何回答的问题。</p>
+
+<p>本研究正是从这个「裂缝」出发——选择超决定论，因为它是唯一能同时保住『决定论 + 局域性』的路。</p>
+</div></div>
+        <div class="intro"><p>承接上面的『裂缝』：贝尔不等式被实验违反，意味着 EPR 的三条前提至少放弃一条。</p><p><b>本研究选择超决定论</b>——因为它是唯一能同时保住『决定论 + 局域性』的出路。代价是承认「测什么」这件事本身也由宇宙初始条件决定，隐变量 λ 与测量设置相关。关键一步是把这个哲学命题变成工程问题：「λ 与设置相关」可精确量化为互信息 I(λ;设置)，即超决定论的「作弊燃料」。Hall(2011)证明：<span class="term" onclick="showGloss('完整复现单态量子关联')">完整复现单态量子关联 ⓘ</span> −cos(θ)，这个互信息至少需 0.0663 bit——它成为全研究的理论标尺(越接近它，说明作弊越少、越「诚实」)。</p><div class="innerbox collapsed"><div class="cbox-h" onclick="toggleDetail(this)"><span class="fold2">▸</span>超决定论的三大代表模型(点击展开/收起)</div><div class="cbox-b"><p><b>超决定论不是单一理论，学界主要有三条进路：</b></p><ul class="modellist"><li style="color:#c0392b"><b><span class="term" onclick="showGloss('不变集理论')" style="color:#c0392b">Palmer 不变集理论 ⓘ</span></b>(★本研究采用)：宇宙态被约束在态空间中一个<b>分形·测度为零的不变集</b>上；λ 与测量设置同源于这个集合、彼此相关，违反测量独立性，贝尔前提因此失效。</li><li><b>&#39;t Hooft 元胞自动机诠释</b>：量子力学从普朗克尺度的<b>确定性元胞自动机</b>涌现，测量选择与底层「本体态」相关。</li><li><b>一般超决定论框架</b>(Hossenfelder 等)：不预设具体机制，只<b>直接否定统计独立性</b>，从信息论层面论证测量依赖的合理性与代价。</li></ul><p>本研究选择 Palmer 的不变集进路，因为它给出了最具体、最可计算的几何对象(分形不变集)，正好能用可微的神经网络去逼近。</p><p><b>【三大模型共同要回答的难题：<span class="term" onclick="showGloss('精细调节')">精细调节 ⓘ</span> / 『阴谋论』指控】</b>这是超决定论最主要的一条反驳(Wood &amp; Spekkens, 2015)：要让隐变量 λ 与测量设置的相关<b>恰好</b>在每一个实验里都复现量子预言，宇宙的初始条件似乎必须被『精细调节』到近乎<b>阴谋</b>的程度，太不自然、太刻意(ad hoc)。换句话说：超决定论主动放弃的是<b>测量独立性</b>这条假设(承认 λ 与测量设置相关)，而精细调节则是它因此挨的那一刀——一放一挨，是同一场争论的正反两面。</p><p>三个模型的分野，正在于<b>各自如何回应『精细调节』</b>。Palmer 不变集理论的回答最几何化：那种相关不是被谁『调』出来的，而是『宇宙态本就落在一个分形不变集上』这一几何事实的<b>自动结果</b>——不需要精调任何初始条件(详见词条)。Hossenfelder &amp; Palmer (2020) 曾专门撰文回应这一指控。</p></div></div><p><b>终极目标</b>：构造一个满足四条硬性质(高维 / 分形·测度为零的不变集 / 内禀产生 cos / 可微)的动力学系统，让量子关联从中自然涌现——即 Palmer 设想的『契合宇宙的不变集』，并用可微的 <span class="term" onclick="showGloss('PINN')">PINN ⓘ</span> / 符号回归去逼近它。</p></div>
+        <div class="steps"><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#3a6ea5">1</span><span class="step-t">确立CHSH判据与量子极限</span></div>
+          <div class="lab"><b>思路/方法 </b>以标准CHSH角度(0°,90°,45°,-45°)手算验证量子可达S=2√2，作为后续所有实验的物理标尺。</div>
+          <div class="res"><b>关键结果 </b>经典S≤2、量子Tsirelson 2√2≈2.828 明确；这是判断&#x27;超越经典/是否作弊&#x27;的红线。</div>
+          
+          
+          
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#3a6ea5">2</span><span class="step-t">量化超决定论的代价</span></div>
+          <div class="lab"><b>思路/方法 </b>把'放弃测量独立'翻译成信息论语言：λ 与设置相关的程度 = <span class="term" onclick="showGloss('互信息')">互信息 ⓘ</span> I(λ;设置)。极简模型直观展示：<span class="term" onclick="showGloss('测量依赖')">测量依赖 ⓘ</span> δ 越大，所需互信息 I 越多。</div>
+          <div class="res"><b>关键结果 </b>引入Hall 2011下界0.0663 bit作为&#x27;复现单态所需最小测量依赖&#x27;的理论锚点(图中橙色虚线)，它恰好对应很小的 δ≈0.15。δ=0(测量独立)时 I=0，δ=0.5(测量依赖到极致)时 I=1 bit。</div>
+          
+          
+          <img loading="lazy" src="images/1.3_Idelta函数图.png" alt="量化超决定论的代价">
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#3a6ea5">3</span><span class="step-t">锁定终极规则的四硬性质</span></div>
+          <div class="lab"><b>思路/方法 </b>把Palmer不变集理论的要求拆成可检验的四条：高维、分形(测度为零)、内禀产生cos、可微。</div>
+          <div class="res"><b>关键结果 </b>其中&#x27;分形=不可微&#x27;与&#x27;PINN要可微&#x27;构成核心死结，是全研究最硬的矛盾，第五阶段正面破解。</div>
+          
+          
+          
+        </div></div>
+        <div class="summary" style="border-color:#3a6ea5"><b>阶段小结 </b>本阶段把一个哲学命题(超决定论)转化为可计算、可证伪的工程目标：在满足 <span class="term" onclick="showGloss('no-signaling')">no-signaling ⓘ</span> 的前提下，用尽量少的测量依赖复现量子关联。</div>
+      </div>
+    </section><section class="stage" id="s2">
+      <div class="stage-h" style="border-color:#3a6ea5" onclick="toggleStage(this)">
+        <span class="stage-name" style="color:#3a6ea5">第二阶段 · 工具与地基</span>
+        <span class="stage-sub">可微不变集代理的方法箱</span>
+        <span class="fold" style="color:#3a6ea5">▾</span>
+      </div>
+      <div class="stage-body">
+        
+        <div class="intro"><p><b>为什么绕不开『可微』？这由 <span class="term" onclick="showGloss('PINN')">PINN ⓘ</span> 的工作方式决定。</b>PINN 靠<b><span class="term" onclick="showGloss('梯度下降')">梯度下降 ⓘ</span>(反向传播)</b>来训练：它反复计算『损失对参数的梯度』，再顺着梯度把参数往更优的方向挪一点。而梯度存在的前提，就是<b>损失函数对参数可微</b>——不可微，就没有梯度，梯度优化整套机器根本转不起来。</p><p>由此，方法论上的必要条件便清晰了：要用 PINN 去『学』一个不变集，就<b>必须先有一个可微的代理表示</b>把这个不变集描述出来，梯度才能穿过它、指导优化。这就是本阶段第一件事——<b style="color:#c0392b">搭建可微不变集代理</b>。</p><p><b>但这里埋下了全研究的核心张力：</b>终极规则要的不变集是<b>分形、测度为零</b>的，天然处处不可微；而 PINN 又只吃可微的东西。『可微 vs 分形』这对矛盾从此贯穿始终，直到第五阶段才被正面破解。</p><p>本阶段先把『可微』这一侧的地基打牢，并同时立起两套<b>用于验证结果可信度的工具</b>——它们本身不产出模型，而是专门用来检验后续每个模型的数字是否可信：一是<b>凸优化 LP</b>，作为『代价标尺/裁判』，给定一条关联曲线就能精确算出复现它所需的代价下界，任何模型报出的代价都要拿它对照；二是一套防止『度量失效』的<b>方法论铁律</b>(先校准、多seed、不在单次运行下结论、负结果也算成果)，作为贯穿全项目的『作弊防线』。</p></div>
+        <div class="steps"><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#3a6ea5">1</span><span class="step-t">可微不变集代理·四方法原型</span></div>
+          <div class="lab"><b>思路/方法 </b>一致性残差(点在不变集上残差→0) / Lyapunov(收缩膨胀分离吸引子) / 不变测度(学测度) / Koopman(算子谱)。</div>
+          <div class="res"><b>关键结果 </b>四条路各自跑通并先在已知答案上校准；不变测度用 arcsine 三重交叉验证，Koopman 主动撤回未验证数据。</div>
+          
+          <div class="detail collapsed"><div class="detail-h" onclick="toggleDetail(this)"><span class="fold2">▸</span>原理详解 · 点击展开</div><div class="detail-b"><span class="dh">怎样用『可微』的方式表示一个不变集？</span>『不变集』是动力学系统里那块『演化后仍落在自己身上』的几何对象(吸引子/支撑集)。它本身可能是分形、无法写成一条方程，所以不能直接优化——必须换一个<b>可微的代理量</b>来刻画『某点/某分布是不是在这个不变集上』，再用梯度去逼近。本阶段并行试了四条互补的路(点方法名的 ⓘ 看完整原理与成果图)：<div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① <span class="term" onclick="event.stopPropagation();showGloss('一致性残差')">一致性残差 ⓘ</span> —— 用零水平集把集合变成可微函数(容易出现平凡解)</div><div class="mbox-b">它直接给出了代理的<b>主体框架</b>——把『不变集』这个几何对象编码成一个可微函数 g<sub>θ</sub> 的零水平集，并把『是否不变』变成一个可求梯度的损失。这是四条路里唯一从零到一搭出『可微代理本体 + 可优化目标』的一条，其余三条都是围绕它做验证或补充。<img loading="lazy" class="mimg" src="images/3.2.1_一致性残差_可视化.png" alt="一致性残差成果图"><div class="cap">成果图：<b>左</b>—尺子校准，不变集上点残差≈3e-8、乱撒点≈1.6e-2，差 6 个数量级，尺子准；<b>右</b>—但拿它当损失训练网络时，网络退化成恒等映射 f(x)≈x(蓝线贴着灰色 y=x)，loss=0 却毫无意义，这就是平凡解。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② <span class="term" onclick="event.stopPropagation();showGloss('Lyapunov指数')">Lyapunov ⓘ</span> —— 改看轨道收缩/膨胀，堵住平凡解</div><div class="mbox-b">它提供<b>验收标准</b>。代理学出的对象到底是不是真吸引子、是不是分形，需要一把客观的尺来判——Lyapunov 谱给出收缩/膨胀方向、体积是否塌缩、以及非整数维数，正好用来检验代理是否学到了『测度为零的分形不变集』这一硬性质，并为第四阶段的分形判定打下度量基础。<img loading="lazy" class="mimg" src="images/3.2.2_Lyapunov_可视化.png" alt="Lyapunov成果图"><div class="cap">成果图：<b>左</b>—学出的能量 V(x) 在窗内单调下坡，把点推向吸引子；<b>中</b>—比方法①进步，真学出了一个吸引子(x≈2.41)，但它逃到训练窗口 [−1,1] 之外；<b>右</b>—加值域约束后被拉回边界内(x≈1.015)。说明 Lyapunov 能排除恒等平凡解、真造出吸引子，但『管形状不管位置』仍需额外约束。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ <span class="term" onclick="event.stopPropagation();showGloss('不变测度方法')">不变测度 ⓘ</span> —— 学出具体概率密度，用 arcsine 校准抓平凡解</div><div class="mbox-b">它补上了<b>测度这一维</b>。方法①只刻画『点在不在集合上』(形状)，却不管『集合上各处停留多少概率』；而 Palmer 不变集的灵魂恰恰是那个测度为零、分布奇异的测度本身。学不变测度 μ 让代理不仅能描形状、还能描测度，并用 arcsine 三重交叉验证证明了这条可微学测度的路是可信的。<img loading="lazy" class="mimg" src="images/3.2.3_不变分布.png" alt="不变测度成果图"><div class="cap">成果图(本方法的校准)：r=4 logistic 映射的不变测度。<b>蓝线</b>=优化学出的 μ、<b>橙线</b>=真跑长轨迹统计的直方图(真值)、<b>绿线</b>=解析公式 arcsine 分布 μ(x)=1/(π√<span class="rad">x(1−x)</span>)。三线大体重合、两端概率飙高(arcsine 特征)，说明这条『可微学测度』的路在已知答案上确实学对了。<br><br>为什么选 r=4 logistic？<br>logistic 映射 x→r·x(1−x) 是混沌研究里最经典、最简单的一维模型；而只有在 r=4 这个特殊值上，它才恰好有一个精确的解析不变测度(就是 arcsine 分布)。正因为 r=4 时『标准答案』已知，才能拿它当校准题——这也是『先校准』纪律的要求：先在有解析答案的题上验证方法不出错。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>④ <span class="term" onclick="event.stopPropagation();showGloss('Koopman方法')">Koopman ⓘ</span>(算子谱) —— 从算子谱求测度，不依赖可微规则的旁证</div><div class="mbox-b">它提供一条<b>不依赖可微规则的旁证/后备路线</b>。当动力学复杂到难以求导时，Koopman 谱能直接从算子层面算出奇异/分形测度，与方法①③互相印证。它的另一层价值是<b>反面教材</b>：正因为它促成了一次未验证数据的主动撤回，反过来夯实了『先校准、不轻信单次结果』的方法论铁律。<img loading="lazy" class="mimg" src="images/3.2.4_Koopman.png" alt="Koopman成果图"><div class="cap">成果图：<b>左</b>—Koopman 算子 𝒦 的特征值分布(单位圆上=守恒、圆内=衰减)；<b>右</b>—用谱重建的一步预测(橙虚线)与真实映射 f(x)=4x(1−x)(蓝线)几乎完全重合，说明谱方法确实抓住了动力学。但正因谱对截断敏感，本阶段对未经充分验证的部分主动留白。</div></div></div><b>为什么要四条并行？</b>没有哪条路先验最优：残差/Lyapunov 擅长刻画『集合形状』，不变测度/Koopman 擅长刻画『集合上的测度』。四条互为交叉验证，且都满足『可微、可优化』这一硬要求——为后面用 PINN 学不变集准备好了地基。</div></div>
+          <img loading="lazy" class="mimg" src="images/3.2.0_四方法流程图.png" alt="四方法共同套路流程图"><div class="cap">流程总览：四条方法其实共用同一套路——撒点/取轨道 → 用一个可微量给点或分布打分 → 先在已知答案上校准 → 梯度优化/求解 → 验收。四者的差别只在第②步『用什么可微量打分』。</div><img loading="lazy" class="mimg" src="images/3.2.0_四方法对比图.png" alt="四方法分工对比图"><div class="cap">分工对比：残差/Lyapunov 侧重刻画『集合形状』，不变测度/Koopman 侧重刻画『集合上的测度』，四者互为交叉验证。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#3a6ea5">2</span><span class="step-t">凸优化代价LP</span></div>
+          <div class="lab"><b>思路/方法 </b>用<span class="term" onclick="showGloss('凸优化代价LP')">凸优化 ⓘ</span>精确求出『复现一条给定关联曲线(CHSH值)所需的最小测量依赖代价』——作为全研究的代价标尺/裁判。<div style="margin-top:7px"><b style="color:#3a6ea5">· 和跑出来的『超决定论模型』的关系：</b>LP 下界只与输入的 CHSH 值有关，与『超决定论模型』无关。LP 是对照用的标尺，不是模型的成绩单。</div><div style="margin-top:3px"><b style="color:#3a6ea5">· 和 Hall 0.0663 的关系：</b>0.0663 就是『理想单态 −cos』这条曲线的 LP 下界。它的用途是校准尺子——把理想 −cos 喂进来若算出 0.0663，就证明求解器没写错。</div></div>
+          <div class="res"><b>关键结果 </b>cvxpy 全局最优，独立复算校验；理想 −cos 校准须给 0.0663——这是 LP 可信的前提。</div>
+          <div class="bd"><b>诚实边界 </b>关键认知(第六阶段的伏笔)：此LP算的是&#x27;关联曲线的理论下界&#x27;，不是某个具体机制的真实互信息——这个区分到审计阶段成为核心。</div>
+          
+          <img loading="lazy" src="images/LP标尺校准.png" alt="LP标尺校准图"><div class="cap">标尺校准图：<b>左</b>—喂给 LP 两道有标准答案的题：理想单态 −cos(蓝)与经典可达曲线(灰，均匀λ即可产生)；<b>右</b>—LP 读数对答案：经典题全程读出 0(数值误差&lt;1e-15，标准答案 0)；理想 −cos 题峰值读出 0.0667≈Hall 0.0663(峰位156°=180°−24°镜像点，与Hall等价)。两题都读准，这把尺子之后的读数才可信。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#3a6ea5">3</span><span class="step-t">CHSH读数器 + 方法论铁律</span></div>
+          <div class="lab"><b>思路/方法 </b>两件基础设施：<span class="term" onclick="showGloss('CHSH读数器')">CHSH 读数器 ⓘ</span>(一个防误读的『测谎仪』) + <span class="term" onclick="showGloss('方法论铁律')">方法论铁律 ⓘ</span>(贯穿全项目的作弊防线)。</div>
+          <div class="res"><b>关键结果 </b>这套纪律是后面11次&#x27;度量失效&#x27;能被当场抓获的根本原因。</div>
+          
+          
+          <img loading="lazy" class="mimg" src="images/3.3a_读数器校准.png" alt="CHSH读数器校准图"><div class="cap"><b>读数器校准图 · 在已知答案上验证它读得准。</b>喂三种数据进读数器：<br><b>· 量子最优数据</b>(绿)→ 读出 <b>S=2.835≈2√2</b>，正好到量子极限；<br><b>· 经典定域数据</b>(灰)→ 读出 <b>S=2.000</b>，卡在经典极限；<br><b>· 错用角度的数据</b>(红)→ 读出 <b>S≈0</b>，这种『看似在测其实测错』的误读被<b>当场抓出</b>。<br>右图同时检查 no-signaling 违反量，三者都远低于红线阈值 0.02——说明读出的强关联是合法的、没有偷偷发信号。这就是『先校准』：新工具先在有标准答案(量子2.828/经典≤2)的题上证明自己读得准，之后的读数才可信。</div>
+        </div></div>
+        <div class="summary" style="border-color:#3a6ea5"><b>阶段小结 </b>工具与纪律到位后，研究从&#x27;能不能算&#x27;升级为&#x27;算得可信&#x27;——每个数字都要经得起先校准、多seed、防作弊三关。</div>
+      </div>
+    </section><section class="stage" id="s3">
+      <div class="stage-h" style="border-color:#2e8b57" onclick="toggleStage(this)">
+        <span class="stage-name" style="color:#2e8b57">第三阶段 · 复现 · 推广 · 生成</span>
+        <span class="stage-sub">从代价曲线到cos涌现</span>
+        <span class="fold" style="color:#2e8b57">▾</span>
+      </div>
+      <div class="stage-body">
+        
+        <div class="intro"><p>地基打好后，本阶段沿三条线推进：</p><p>(1) 画完整的'代价-关联'权衡曲线——阶段②造好的 LP 标尺只在单点校准过，本阶段扫完 S 从 2 到超量子的全量程。</p><p>(2) 严格复现 Hall——验证阶段②的方法是否能复现公认标准答案(0.0663 bit、峰值24°)，验证阶段②模型的有效性。</p><p>(3) 让PINN从被动'拟合'跨进主动'生成'——终极目标要求 cos 关联『内禀涌现』而非手工植入，所以必须先在最简单的光滑场景下单独验证『让规则自己长出 cos』这件事可行，再留给阶段④去叠加分形这个更硬的约束。</p></div>
+        <div class="steps"><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#2e8b57">1</span><span class="step-t">代价曲线与二次律</span></div>
+          <div class="lab"><b>思路/方法 </b>接上CHSH，设置-λ用softmax参数化，凸优化扫S从2到超量子。</div>
+          <div class="res"><b>关键结果 </b>S=2.828时I=0.0462bit；发现代价近似遵循(S-2)²二次律——数值拟合所得(R²=0.9993)，非解析证明。正确区分了&#x27;本模型0.046&#x27;与&#x27;Hall 0.0663&#x27;，拒绝假等价。</div>
+          
+          <div class="detail collapsed"><div class="detail-h" onclick="toggleDetail(this)"><span class="fold2">▸</span>原理详解 · 点击展开</div><div class="detail-b"><span class="dh">为什么本模型是 0.046，Hall 是 0.0663？</span>两个数都是『在 no-signaling 约束下，复现目标关联所需的最小测量依赖互信息』，差别只在【要复现的目标】不同：<br>· <b>0.0462 bit</b>：只要求凑出 CHSH 的 4 个测量设置组合，使 S=2.828。λ 这份『小抄』只需应付 4 道固定考题；<br>· <b>0.0663 bit</b>(Hall 2011)：要求任意测量夹角 θ 下，关联都精确等于 −cos(θ)——整条连续曲线、无穷多道考题都要答对。<br><br>要应付的考题范围越大，小抄里需要夹带的关于测量设置的信息就越多。数学上这是凸优化的单调性：约束更多 → 可行域更小 → 最小值只增不减。因此『复现全角度单态曲线』的代价必然大于等于『只复现 CHSH 值』的代价，0.0462 &lt; 0.0663 是<b>结构必然，不是数值巧合</b>。这也正是『拒绝假等价』的原因：0.046 不构成『重现 Hall』——真正按全角度约束重现 Hall 0.0663，是下一卡(球面版)完成的。<br><br><span class="dh">发现二次律有什么帮助？</span>① <b>把代价从『一个点』升级成『一条规律』</b>：M1 只给出 S=2.828 处的单点数字，二次律 I ≈ 0.0665·(S−2)<sup>2</sup> 给出全量程的定量刻画——想超越经典多少，代价按超出量的平方增长；<br>② <b>给出『超越经典的起步价为零』的物理直觉</b>：二次函数在 S=2 处值与导数皆为零——刚超出经典极限一点点时，所需测量依赖小到可忽略；越逼近量子极限，代价爬升越陡；<br>③ <b>为『无拐点』负结论提供基线</b>：量子区内确认光滑二次律后，曲线扫过 2.828 进入超量子区依旧平滑(见下图左)——若量子极限 2√2 在『测量依赖』这种度量下有特殊地位，曲线应在此处转折，但没有。结论：测量依赖解释不了 Tsirelson 界的特殊性，这是本阶段推广线(第3卡)的关键负结论。</div></div>
+          <img loading="lazy" src="images/代价曲线二次律.png" alt="代价曲线与二次律图"><div class="cap">全量程代价曲线：<b>左</b>—扫 S 从 2(经典极限)过 2√2(量子极限，曲线平滑无拐点)进入超量子区，S=2.828 处 I=0.0462 bit 与 M1 单点交叉验证一致；<b>右</b>—量子区内把 I 对 (S−2)<sup>2</sup> 作图，数据点成过原点直线(斜率0.0665，R<sup>2</sup>=0.9993)，直接验证二次律。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#2e8b57">2</span><span class="step-t">真·重现Hall</span></div>
+          <div class="lab"><b>思路/方法 </b>在<span class="term" onclick="showGloss('Bloch球面')">Bloch球面 ⓘ</span>上用<span class="term" onclick="showGloss('Fibonacci撒点')">Fibonacci撒点 ⓘ</span>+点积sign测量复现单态全角度-cos。</div>
+          <div class="res"><b>关键结果 </b>独立重现Hall 2011的0.0663bit(峰值24°, 五重吻合)——全项目最扎实的验算锚点。</div>
+          
+          
+          <img loading="lazy" src="images/3.3g_球面版代价曲线.png" alt="球面版代价曲线"><div class="cap">曲线含义：对每个测量夹角 θ，凸优化求出『把该角度的关联掰成量子值 −cos(θ)』所需的最小测量依赖。<br><b>三处代价为 0</b>(θ=0°/90°/180°)：均匀 λ(测量独立)产生的经典关联恰好在这三个角度与 −cos 相等，无需任何『偷看』；越偏离这三点，−cos 与经典曲线差得越多，代价越高，形成双峰。<br><b>橙点峰值 0.0667 bit @156°</b>：与 Hall 2011 的 0.0663 bit(峰位 24°)是镜像等价——本构造(单态 −cos 加 B=−sign(y·λ))关于 90° 镜像对称，24° 与 156° 是同一物理点，数值误差约 0.3%。<br><b>『五重吻合』</b>指数值、模型、度量、聚合方式、峰位(镜像等价)五项都与 Hall 原文对上。这一步的意义：把阶段②的工具链放到有公认标准答案的题上做全面体检——通过后，它才有资格进入后面没有标准答案的新领域。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#2e8b57">3</span><span class="step-t">高维/多体推广</span></div>
+          <div class="lab"><b>思路/方法 </b>把框架推广到多设置(链式)、高维(qudit/CGLMP)、多体(GHZ/Mermin)、超量子(PR-box)四个方向。</div>
+          <div class="res"><b>关键结果 </b>作弊代价呈&#x27;两增一减&#x27;(体数/维数增、设置减)；量子极限2.828处无拐点——测量依赖解释不了Tsirelson的特殊性。</div>
+          <div class="bd"><b>诚实边界 </b>个别高N点(N=5,6)为硬编码值，脚本内未复现，趋势以现算点为准。</div>
+          
+          此前所有代价都算在【标准 CHSH 情景】上：两体、每方 2 个设置、每次测量 2 种结果、目标最强到量子极限 2.828。本卡把这四个『旋钮』各拧一个，考察作弊代价对哪种复杂度敏感。四个方向沿用同一套严格流程：先在已知答案处定标(四方向的锚点 A 的 n=2、B 的 d=2、D 的 S=2.828 都回到 CHSH 的 0.046, 与前面『代价曲线与二次律』卡交叉一致)，再凸优化求最小测量依赖。<br><br><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① A 多设置(链式 Bell) —— 拧『每方设置数 n』</div><div class="mbox-b">CHSH 里 Alice 和 Bob 各只有 2 个测量设置。n=2 时，切得很粗，相邻测量方向之间夹角很大(比如 90°、45°)。这恰好是量子力学和经典理论差别最大的地方——大夹角下，量子关联能做到经典模型怎么都做不到的强度。n 很大时，其实是在用很多小台阶去逼近一个「连续旋转」的测量装置。而对连续、缓慢变化的物理过程，经典的局域实在论(local realism)几乎总能靠「局部跟随」来模拟——就像你把一段圆弧切得足够碎，每一小段几乎就是直线，局域模型不需要什么「超光速」就能追上。所以设置数越多，整个装置越像一个经典可以逼近的连续过程，量子的特殊之处就被稀释了。<img loading="lazy" class="mimg" src="images/4A_代价随设置数.png" alt="A 代价随设置数"><div class="cap">图：代价随每方设置数 n <b>递减</b>——n=2→0.046, n=3→0.043, n=4→0.033, n=5→0.025。原因正是上面「用小台阶追连续旋转」的直觉：设置越多，量子的特殊之处被稀释得越厉害，把经典关联掰成量子关联需要的『偷看』就越少。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② B 高维 qudit(CGLMP) —— 拧『结果维数 d』</div><div class="mbox-b">此前每次测量只有 ±1 两种结果(qubit)，像抛硬币只有正面or反面；qudit 每次测量能吐出 d 种结果(CGLMP 不等式(Collins-Gisin-Linden-Massar-Popescu)把它推广到 d 种，d=2 时退化回 CHSH)，像掷一个 d 面骰子。骰子面数越多，两边骰子「心有灵犀」就越难——经典的局域模型只能靠「提前商量好一套固定对应表」来蒙混，而量子纠缠能在 d 个结果之间织出一种更精细、更难被经典策略仿造的关联结构。骰子面数越多，「量子专属的精细关联」和经典物理之间的差距就越大，代价递增。<img loading="lazy" class="mimg" src="images/4B_代价随维数.png" alt="B 代价随维数"><div class="cap">图：代价随结果维数 d <b>递增</b>——d=2→0.046, d=3→0.058, d=4→0.062。高维纠缠的非局域性更强(量子违反随 d 增大)，复现它自然更贵。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ C 多体 GHZ(Mermin) —— 拧『纠缠体数 N』</div><div class="mbox-b">此前只有两体纠缠（Alice and Bob），此处GHZ态（Greenberger-Horne-Zeilinger）把纠缠推广到N个粒子。可以类比高维，多体好似是在扔n枚硬币。硬币枚数越多，硬币之间「心有灵犀」就越难，代价递增。<img loading="lazy" class="mimg" src="images/4C_代价随N阶梯.png" alt="C 代价随体数N"><div class="cap">图：代价随体数 N <b>阶梯递增</b>——N=2 处该构造量子值=经典界(无违反, 代价 0)；N=3,4→0.208；N=5,6→0.339，奇偶配对成阶梯。量子违反随 N 指数增长，代价却只温和爬阶梯——多体下变贵但<b>非指数爆炸</b>(N=5,6 为硬编码点, 见诚实边界)。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>④ D 超量子(PR-box) —— 拧『关联强度 S』</div><div class="mbox-b">PR-box(Popescu-Rohrlich box)是一种假想关联：严格满足no-signaling，却把CHSH顶到代数极限S=4——比量子更强，但依然不能使用超光速通信。前文代价曲线已经认证了，最小测量依赖与CHSH成二次函数的关系，因此，像超量子范围内推广时，代价递增。<img loading="lazy" class="mimg" src="images/4D_超量子代价曲线.png" alt="D 超量子代价曲线"><div class="cap">图：S 从 2 扫到代数极限 4，代价平滑单调(S=2.828→0.046, S=4→0.415)，穿过量子极限 2.828(红色虚线)时<b>无任何拐点</b>——测量依赖对量子/超量子一视同仁。推论：量子为何停在 2.828(Tsirelson 界)，不能由测量依赖代价解释，量子特殊性另有来源。</div></div></div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#2e8b57">4</span><span class="step-t">PINN跨进&#x27;生成&#x27;</span></div>
+          <div class="lab"><b>思路/方法 </b>不再拟合数据点，而是反向学出&#x27;产生目标分布的规则&#x27;；再让cos从同源动力学涌现。</div>
+          <div class="res"><b>关键结果 </b>①反向学规则机制可行(arcsine兜底校准，摸清3个必要条件)；②统一模型内禀产生全角度cos可行，但代价高于逐点下界(平均~2.6x，峰值~4.5x)；cos的0.0663bit测量依赖在&#x27;撤掉点积&#x27;后依然逃不掉——再证Bell。</div>
+          <div class="bd"><b>诚实边界 </b>统一PINN的倍数结论被诚实降级为量级性2~5x(峰位随训练漂移·优化病态)；cos的测量函数仍是手工sign点积，真·内禀涌现仍开放。</div>
+          
+          <svg viewBox="0 0 1000 775" width="1000" height="775" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#fff"><defs><marker id="m5arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a3"/></marker></defs><text x="500.0" y="34" font-size="20" font-weight="700" fill="#1a2340" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">M5 实验链：从「验算」跨进「生成」</text><text x="500.0" y="58" font-size="13" fill="#6a7280" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">反向学规则(5.1) → 尝试内禀产生量子 −cos 关联(5.2.x)</text><rect x="40" y="80" width="430" height="180" rx="16" fill="#eafaf0" stroke="#2e8b57" stroke-width="2"/><text x="60" y="114" font-size="16.5" font-weight="700" fill="#2e8b57" font-family="Hiragino Sans GB,PingFang SC,sans-serif">5.1 实验0 · 反向学规则</text><rect x="406" y="98" width="44" height="22" rx="11" fill="#2e8b57"/><text x="428.0" y="114" font-size="12" font-weight="600" fill="#fff" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">成功</text><text x="60" y="142" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">目标 = arcsine 分布(已知解析答案兜底)</text><text x="60" y="165" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">网络当「规则」f_θ, 反向学出能产生它的动力学</text><text x="60" y="188" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">摸清 3 个必要条件：</text><text x="60" y="211" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">约束规则族 · 真实轨迹 · 短迭代链</text><rect x="530" y="80" width="430" height="180" rx="16" fill="#fdedeb" stroke="#c0392b" stroke-width="2"/><text x="550" y="114" font-size="16.5" font-weight="700" fill="#c0392b" font-family="Hiragino Sans GB,PingFang SC,sans-serif">离散圆周</text><rect x="812" y="98" width="128" height="22" rx="11" fill="#c0392b"/><text x="876.0" y="114" font-size="12" font-weight="600" fill="#fff" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">废弃 · 反面教材</text><text x="550" y="142" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">首次尝试内禀产生 cos, 掰弯成功</text><text x="550" y="165" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">但代价被压到远低于 Hall 0.0663 bit</text><text x="550" y="188" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">根因：离散 sign 测量把 λ 分两块，</text><text x="550" y="211" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">块内可免费微调 → 数值作弊, 非物理</text><path d="M470,170 L525,170" fill="none" stroke="#8a93a3" stroke-width="2.2" marker-end="url(#m5arrow)"/><text x="497" y="155" font-size="12.5" fill="#c0392b" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">带着 3 个必要条件去攻 cos</text><rect x="40" y="300" width="430" height="190" rx="16" fill="#eaf1fa" stroke="#3a6ea5" stroke-width="2"/><text x="60" y="334" font-size="16.5" font-weight="700" fill="#3a6ea5" font-family="Hiragino Sans GB,PingFang SC,sans-serif">连续球面 · 统一PINN</text><text x="60" y="362" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">搬到 3D Bloch 球面, 堵住离散测量的漏洞</text><text x="60" y="385" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">一个 PINN 统一产生全角度 −cos</text><text x="60" y="408" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">(平均 KL = 0.123 bit)</text><text x="60" y="431" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">代价变真实了, 但明显偏高；</text><text x="60" y="454" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">峰值伪影落在端点 0°/180°</text><rect x="530" y="300" width="430" height="190" rx="16" fill="#fef5ea" stroke="#e67e22" stroke-width="2"/><text x="550" y="334" font-size="16.5" font-weight="700" fill="#e67e22" font-family="Hiragino Sans GB,PingFang SC,sans-serif">变体B：sin(θ)缩放</text><text x="550" y="362" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">扰动幅度 ∝ sin(θ), 端点自动零代价</text><text x="550" y="385" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">峰位向 Hall 的 24° 靠拢(平均 KL=0.090 bit)</text><text x="550" y="408" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">但优化病态：峰位随训练随机种子漂移</text><text x="550" y="431" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">(24°→15°→8°), 倍数不稳定</text><path d="M620,290 C620,270 260,290 245,300" fill="none" stroke="#8a93a3" stroke-width="2.2" marker-end="url(#m5arrow)"/><text x="435" y="275" font-size="12.5" fill="#c0392b" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">堵住漏洞：搬到连续球面</text><path d="M470,395 L525,395" fill="none" stroke="#8a93a3" stroke-width="2.2" marker-end="url(#m5arrow)"/><text x="497" y="380" font-size="12.5" fill="#c0392b" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">加 sin(θ) 缩放，修端点伪影</text><rect x="285" y="570" width="430" height="180" rx="16" fill="#fff8e6" stroke="#a6790a" stroke-width="2"/><text x="305" y="604" font-size="16.5" font-weight="700" fill="#a6790a" font-family="Hiragino Sans GB,PingFang SC,sans-serif">变体C：逐角度独立</text><rect x="627" y="588" width="68" height="22" rx="11" fill="#a6790a"/><text x="661.0" y="604" font-size="12" font-weight="600" fill="#fff" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">黄金基准</text><text x="305" y="632" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">回到逐角度独立凸优化(与『真·重现Hall』同一思路)</text><text x="305" y="655" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">峰值 0.0670 bit @ 24°</text><text x="305" y="678" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">精确复现 Hall 2011(误差 ~1%)</text><text x="305" y="701" font-size="13.5" fill="#3a3f47" font-family="Hiragino Sans GB,PingFang SC,sans-serif">= 统一模型代价该多低的理论下界</text><path d="M150,490 C150,540 300,545 355,570" fill="none" stroke="#8a93a3" stroke-width="2.2" marker-end="url(#m5arrow)"/><text x="225" y="545" font-size="12.5" fill="#c0392b" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">对照下界</text><path d="M840,490 C840,540 680,545 640,570" fill="none" stroke="#8a93a3" stroke-width="2.2" marker-end="url(#m5arrow)"/><text x="780" y="545" font-size="12.5" fill="#c0392b" text-anchor="middle" font-family="Hiragino Sans GB,PingFang SC,sans-serif">判定倍数根因</text></svg><div class="cap">实验链总览：先验证「反向学规则」这条机制本身可行，离散圆周首次尝试内禀产生 cos 但踩到数值作弊而废弃，连续球面·统一PINN 换球面堵漏洞后代价变真实但偏高，变体B·sin缩放修掉端点伪影但训练不稳，变体C·逐角度独立用凸优化给出理论下界作为黄金基准，供两个「统一模型」对照代价高出多少。</div><br><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① 反向学规则 —— 机制先验证</div><div class="mbox-b">在啃「内禀产生 cos」这块硬骨头之前，先问一个更基础的问题：PINN 能不能反过来学出「产生一个目标分布的动力学规则」，而不是像以前那样正向拟合数据点？选一个<b>有解析答案</b>的目标做校准题——arcsine 分布(r=4 logistic 映射的不变测度，在讲解 [[不变测度方法]] 时已用过)，让网络当规则 f_θ，反向学出能产生它的动力学。<img loading="lazy" class="mimg" src="images/5.1_PINN反向学规则_能力验证.png" alt="反向学规则"><div class="cap"><b>左</b>—学出的规则 f_θ(蓝)大致落在目标 logistic 映射(橙)附近，明显偏离「什么都不做」的恒等映射y=x(灰虚线，那是最容易被优化器抄近路走到的作弊解)；<b>右</b>—学出规则长期迭代后的分布直方图(蓝)，与 arcsine 目标(橙)、以及规则自身的不动点分布(绿)三者形状一致，两端(0和1附近)概率飙高，是 arcsine 分布的典型特征。结论：反向学规则这条机制可行，摸清了 3 个必要条件(约束规则族、用真实轨迹而非单步、迭代链不能太长)。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 离散圆周 —— 首次尝试，数值作弊(废弃)</div><div class="mbox-b">机制验证可行后，正式进攻「内禀产生 cos」：λ 取在圆周上(离散成 N 格)，Alice 固定方向，Bob 方向设为 θ，让网络学出「条件测度」μ_θ(λ)，把默认三角波关联掰成量子 −cos(θ)。<img loading="lazy" class="mimg" src="images/5.2.1_softmax参数化_掰弯与代价.png" alt="离散圆周"><div class="cap"><b>左</b>—学出的 μ_θ(橙)确实把均匀基线的三角波(蓝)掰成了几乎与量子 −cos(θ)(绿)重合的曲线，看起来「掰弯」很成功；<b>右</b>—但看条件测度本身：它是一个在 λ 上分段跳变的方波(不同 θ 对应不同的跳变位置)，而不是平滑分布。说明优化器没有对整条 λ 曲线做精细的、连续的调整，而是把 λ 圆周粗暴地分成几大块(对应 sign 函数的正负分界)，然后只在「块与块之间」搬运概率总量，块内部随便摆，反正测量根本不关心块内细节。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ 连续球面·统一PINN —— 堵住漏洞，但代价偏高</div><div class="mbox-b">把 λ 从离散圆周搬到 <span class="term" onclick="event.stopPropagation();showGloss('Bloch球面')">Bloch球面 ⓘ</span>上的连续分布，测量换回点积 sign(与「真·重现Hall」同款设定)——球面上没有「块」可钻，堵住了离散圆周的漏洞。训练<b>一个</b> PINN，让它对所有测量夹角 θ 统一给出条件分布，而不是像凸优化那样逐角度各算各的。<img loading="lazy" class="mimg" src="images/5.2.2_统一PINN.png" alt="统一PINN"><div class="cap"><b>左</b>—统一模型产生的 E(θ)(蓝)与量子 −cos(θ)(橙)几乎完全重合，关联曲线复现得很好；<b>右</b>—但看代价：真实的测量依赖(蓝线)在两端 0°/180° 处反而<b>最高</b>(接近0.30 bit)，中段反而低于 Hall 0.0663 bit(红虚线)——这是不对的，Hall 的真实峰值应该在 24° 附近，端点代价理应趋于 0。堵住数值作弊后，代价终于「真实」了，但统一模型给出的形状本身还带着伪影，还不能直接采信。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>④ 变体B·sin缩放 —— 修端点伪影，但训练不稳</div><div class="mbox-b">诊断上一步连续球面·统一PINN的端点为伪影：θ=0°或180°时 Alice、Bob 测量方向重合或相反，物理上应该「不需要偷看」就能达成完美(反)关联，代价理应精确为 0。给扰动幅度乘一个 sin(θ) 因子——θ 趋于 0°/180° 时扰动自动归零，强迫端点代价归零。<img loading="lazy" class="mimg" src="images/5.2.3_扰动加sin缩放.png" alt="sin缩放"><div class="cap"><b>左</b>—关联曲线依旧很好地贴合 −cos(θ)；<b>右</b>—端点代价确实被压到 0，峰值形状也从「两端高中间低」的错误形态，改回了「中间偏低两端有峰」的正确形态，峰位向 Hall 的 24° 靠拢了一大截。<b>但这个修正是靠人工设计的缩放函数换来的，属于对症下药而非机制自发涌现</b>；而且换不同随机种子重跑，峰值位置会漂移(24°→15°→8°)，说明优化本身还不稳定，只能得到「量级对得上」而非「精确复现」的结论。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>⑤ 变体C·逐角度独立 —— 退回凸优化，确立黄金基准</div><div class="mbox-b"><b style="color:#3a6ea5">目的：</b>统一 PINN(3&4) 要用一套参数同时伺候所有角度，天然比「每个角度单独算」吃亏，代价高不高没法凭空判断——需要一把独立的尺子做参照。<br><b style="color:#3a6ea5">做法：</b>此处不训练神经网络，退回逐角度独立凸优化——每个 θ 单开一个优化问题单独求最小代价，互不共享、互不影响，凸优化保证给出全局最优解(不像神经网络训练那样会卡在局部解、随种子漂移)。<br><b style="color:#3a6ea5">产出：</b>统一模型多了「所有角度共用一套规则」这个额外约束，约束只会让最优解变差不会变好，所以这条逐角度独立的曲线是任何统一模型理论上都不可能突破的下限。<img loading="lazy" class="mimg" src="images/5.2.4_逐角度凸优化.png" alt="逐角度独立"><div class="cap">峰值 0.0670 bit @ 24°(橙星)，精确落在 Hall 2011 的 0.0663 bit(红虚线)上，误差约 1%——这条曲线其实就是阶段③「真·重现Hall」那张图的再次确认，此处的角色是拿来当<b>标尺</b>：用它对照连续球面·统一PINN(峰值 0.30，约 4.5 倍下界)和变体B·sin缩放(峰值同量级)，才能算出「统一模型比理论下界贵多少」这个诚实的倍数(平均 ~2.6x、峰值 ~4.5x，且因训练不稳只是量级性结论)。</div></div></div>
+        </div></div>
+        <div class="summary" style="border-color:#2e8b57"><b>阶段小结 </b>到此，量子关联已能从可微规则中&#x27;涌现&#x27;而非手填，但用的都是光滑测度(填满空间)，尚未触碰&#x27;分形·测度为零&#x27;这条最硬性质。</div>
+      </div>
+    </section><section class="stage" id="s4">
+      <div class="stage-h" style="border-color:#e67e22" onclick="toggleStage(this)">
+        <span class="stage-name" style="color:#e67e22">第四阶段 · 同源与分形</span>
+        <span class="stage-sub">触碰最硬性质：测度为零的不变集</span>
+        <span class="fold" style="color:#e67e22">▾</span>
+      </div>
+      <div class="stage-body">
+        
+        <div class="intro"><p>本阶段攻两道最硬的墙。其一是『同源生成』：让测量设置与隐变量λ取自同一条轨迹的不同读出点，从而天然满足no-signaling，规则中不含显式设置。其二是『真分形』：之前的光滑测度填满空间(测度非零)，绕过了Palmer理论的灵魂；本阶段用耗散映射把吸引子压成测度为零的分形，正面触碰这条性质。</p></div>
+        <div class="steps"><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#e67e22">1</span><span class="step-t">同源生成</span></div>
+          <div class="lab"><b>思路/方法 </b>setting与λ同源于用<span class="term" onclick="showGloss('Arnold cat map')">混沌映射 Arnold cat map ⓘ</span>演化出的一条轨迹，用<span class="term" onclick="showGloss('坐标分离')">坐标分离 ⓘ</span>读出：同一时刻的 x 坐标记作 setting、y 坐标记作 λ；规则本身可学(cat 基底 + PINN 扰动)，训练目标是让关联形状贴近 -cos。</div>
+          <div class="res"><b>关键结果 </b>2D 上不含显式 setting 的可学同源规则稳健产生接近 -cos 的关联(形状差~0.06，多种子确认)，真实代价约 Hall 2 倍；3D/4D 换算法后读数降到约 1.2 倍，但这是两种不同类型的量，不能直接说&#x27;升维把代价降低了&#x27;(见诚实边界)。</div>
+          <div class="bd"><b>诚实边界 </b>【审计修正，讲清楚在改什么】早期的说法是&#x27;2D代价~2倍Hall → 3D/4D代价降到~1.2倍，升维能省代价&#x27;。但这个&#x27;下降&#x27;是错觉：2D的2倍，是用互信息估计器&lt;b&gt;直接测出&lt;/b&gt;的、这条同源规则的&lt;b&gt;真实代价&lt;/b&gt;；3D/4D的1.2倍，是升维后互信息估计器&lt;b&gt;先失效了&lt;/b&gt;(见下③)，被迫换成凸优化算出的&lt;b&gt;曲线复现下界&lt;/b&gt;——下界回答的是&#x27;理论上最少要多少代价&#x27;，不是&#x27;这条规则实际付出了多少代价&#x27;。两个数不是同一种东西，拿来比大小、说&#x27;降低了&#x27;是错配比较，已被第六阶段审计推翻；高维场景下这条规则的&lt;b&gt;真实&lt;/b&gt;代价，至今没有被可靠测量过——工具墙仍未解决。</div>
+          
+          <img loading="lazy" src="images/代价随维度.png" alt="代价随维度变化"><div class="cap">不同维度下(真正贴近cos形状时)的代价读数：2D≈2.0x(真实代价)、3D≈1.2x、4D≈1.2x(均为凸优化下界)。<b>提醒</b>：三根柱子看似'越高维越省'，但 2D 那根和 3D/4D 那两根柱子背后是<b>不同算法算出来的不同类型的量</b>(见诚实边界与下方②③)，不能连成一条'代价随维度下降'的曲线来读。</div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① Arnold cat map方案</div><div class="mbox-b">目标：造一条<b>不含显式 setting</b> 的规则，让 setting 和 λ 从同一条轨迹里自然长出相关性——这是 Palmer'同源'图像的最小可算版。<br><br>具体做法：让 Arnold cat map(基底) 叠加一个 PINN 扰动，两者合成一条可学的演化规则；取同一时刻的 x 坐标记作 setting、y 坐标记作 λ(坐标分离)，训练时直接把损失定为'关联形状与 -cos 的差距'，让规则自己去逼近目标形状。<img loading="lazy" class="mimg" src="images/5.5.4_攻法B_同源规则学形状.png" alt="同源规则学形状"><div class="cap">学出的同源规则(蓝)产生的关联，形状紧贴量子 -cos(红虚线)，明显偏离三角波(灰虚线)——首次让 cos 从一条不含显式 setting 的同源动力学规则里<b>内禀涌现</b>，不再是手工植入。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 2D 上代价怎么测的：稳健约 Hall 2 倍</div><div class="mbox-b">①的规则形状学对之后，用互信息估计器直接测这条规则的真实代价，多种子重复运行取均值(避免被单次幸运结果骗到)。无论用同一条轨迹的两个时间点(时间分离)、还是同一时刻的两个坐标(坐标分离)构造同源关系，测出的代价都稳健地卡在<b>约 Hall 2 倍</b>附近，没能压得更低。<img loading="lazy" class="mimg" src="images/5.5.9_攻法B_地板对比.png" alt="地板对比"><div class="cap">时间分离(蓝)代价≈2.4x Hall，坐标分离(紫)≈2.1x Hall——两种构造方式殊途同归，都卡在 2 倍附近，说明这更像同源生成机制本身的属性，不是某种具体分离方式没调好；坐标分离数值上略优，最终采用它。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ 升到3D/4D真实维度，凸优化算代价</div><div class="mbox-b"><b>为什么要用凸优化</b>：升维后，直接测'这条规则真实付出多少代价'的互信息估计器不可靠(见②)，只能换个问法——sign 测量会把球面按 Alice/Bob 方向切成 4 个离散区域(++/+−/−+/−−)，关联和代价只取决于 λ 落在哪个区域的概率如何随 θ 变，这是个<b>离散概率</b>问题，凸优化可以精确求出<b>下界</b>，不需要连续互信息估计。<br><br><b>和前面凸优化的区别</b>：前面(『代价曲线与二次律』『真·重现Hall』)凸优化算的是一把<b>标尺/裁判</b>，只用来对照，从不冒充是某个具体机制的真实代价；这里因为工具受限，这个下界被<b>当作</b>'这条同源规则代价多少'的替代答案来用——但下界终究只是理论上的最少代价，不是这条规则实际付出的代价，两者不能画等号。<img loading="lazy" class="mimg" src="images/5.6.8_攻法B_4维调优.png" alt="四维调优"><div class="cap">4D 最优种子：形状差 gap=0.011，此时凸优化下界代价 0.078 bit(≈1.2x Hall)；3D 情形更稳(5个种子 std&lt;0.02)，最优种子同样 gap=0.011、代价 0.082 bit(≈1.2x Hall)。只有 gap 真正趋近 0(形状真贴上 cos)时，这个下界数字才有资格拿来看——4D 种子间波动其实很大(gap 从 0.011 到 0.136 不等)，这里只挑了最优种子说话。'3D/4D 比 2D 便宜'这句话只在'下界 vs 下界'内部成立，不能拿去跟 2D 的'真实代价'比。</div></div></div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#e67e22">2</span><span class="step-t">耗散造真分形→3D解锁cos</span></div>
+          <div class="lab"><b>思路/方法 </b>目标：收住 3D + 分形——在真正测度为零的分形吸引子上，让 cos 关联依然能内禀涌现。</div>
+          <div class="res"><b>关键结果 </b>2D锁在三角波，升到3D解锁cos——首次在真正测度为零的分形上让cos涌现。</div>
+          
+          
+          <div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>尝试一：Hénon 遇数值发散墙</div><div class="mbox-b">先用经典的 <span class="term" onclick="event.stopPropagation();showGloss('Hénon映射')">Hénon 映射 ⓘ</span>(一种耗散的、能收缩出分形吸引子的经典混沌系统)打底，让规则可学(Hénon 基底 + PINN 扰动)，训练关联形状贴近 −cos。<br><br>结果：Hénon 映射里有一个无界的二次项 x²，在多步梯度训练的反复迭代中数值发散——x 被推到 −50000 这种量级，轨迹整个'逃逸'，吸引子塌成一条发散曲线，关联直接归零。这不是'训练没调好'，是这个映射本身在梯度训练场景下不安全。<img loading="lazy" class="mimg" src="images/2b2_第2步_耗散规则学cos守分形.png" alt="Hénon数值发散"><div class="cap"><b>左</b>—学出规则的吸引子(D2=0.36)：轨迹从 0 一路逃逸到 x≈−55000，早已不是一个吸引子的形状；<b>中</b>—关联(vs cos差0.609)：蓝线(学出分形同源)整条拍平在 0，说明关联被数值发散冲得干干净净；<b>右</b>—训练监控：D2 一路从 0.95 崩到 0.6，还在持续下滑，没有收敛的迹象。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>尝试二：baker 映射</div><div class="mbox-b"><span class="term" onclick="event.stopPropagation();showGloss('baker映射')">baker 映射 ⓘ</span>(有界耗散 baker map)的构造：整个空间限制在单位方块 [0,1]³ 内，x 坐标做'倍增拉伸'(乘2取模，天然不会跑出 [0,1))，y、z 坐标则根据 x 落在左半还是右半，分别被压缩进两条窄带、中间永远留白——这个'留白'反复嵌套下去，就在 y、z 方向上织出了 Cantor 集(一种测度为零的分形结构)。整个映射处处有界，所以不会重蹈 Hénon 发散的覆辙。压缩率 a 被写死为 0.42(不让 PINN 学)，是为了防止优化器'作弊'——如果压缩率可学，最省力的解法就是把它调回不压缩，让吸引子重新填满整个空间(那就不是分形了)。理论上这样构造出的分形维数 D2 ≈ 1+2log2/log(1/a) ≈ 2.6(小于 3，确认是真分形)。整个过程处处有界，没有再出现 Hénon 那种发散。</div></div><div style="margin-top:16px;max-width:420px;margin-left:auto;margin-right:auto"><img loading="lazy" style="width:100%" src="images/3D分形_吸引子.png" alt="3D baker吸引子"><div class="cap">3D baker 吸引子：25000 个点的散点图并没有填满整个立方体，而是聚成有结构的片状/带状——这就是分形吸引子该有的样子；实测 D2=1.55&lt;3，比理论预期的 2.6 更'瘦'。</div></div><div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:220px"><img loading="lazy" style="width:100%" src="images/3D分形_关联.png" alt="3D分形关联对比"><div class="cap">3D分形上学出的关联(蓝)紧贴量子 −cos(红虚线)，明显甩开三角波(灰点线)，vs cos差只有 0.032。</div></div><div style="flex:1;min-width:220px"><img loading="lazy" style="width:100%" src="images/3D分形_监控.png" alt="训练监控"><div class="cap">训练监控：绿线(D2)全程稳定压在 1.5~1.9 之间，既没有逼近填满线(3)、也没有塌成线(&lt;1.1)，红线(vs cos差)随训练下降并稳定在低位。</div></div></div><div style="margin-top:14px"><b>最终结果</b>：两个目标(守住分形 + 产生cos)是否同时达成，把上面三张图放一起看——吸引子形状、关联形状、分形维数在训练全程的表现，'守住分形'和'贴近cos'是同时达成的，不是牺牲一个换另一个。</div><div class="bd" style="margin-top:14px"><b>诚实边界 </b>cos受分形几何约束，5个随机种子里只有3个能达标(非稳健)；关联曲线的复现下界约 4.6×Hall，比同源生成那条线(约2倍/1.2倍)更贵。</div>
+        </div></div>
+        <div class="summary" style="border-color:#e67e22"><b>阶段小结 </b>四硬性质首次同框，但&#x27;分形&#x27;与&#x27;可读公式/可微&#x27;仍分属不同模型——分形是baker几何硬构、无可读公式；符号回归有可读公式但非分形。死结未解。</div>
+      </div>
+    </section><section class="stage" id="s5">
+      <div class="stage-h" style="border-color:#c0392b" onclick="toggleStage(this)">
+        <span class="stage-name" style="color:#c0392b">第五阶段 · 根本攻法 · 零手工</span>
+        <span class="stage-sub">可读公式 → 端到端涌现</span>
+        <span class="fold" style="color:#c0392b">▾</span>
+      </div>
+      <div class="stage-body">
+        
+        <div class="intro"><p>本阶段先用两条&#x27;根本攻法&#x27;寻找可读的动力学公式，再正面破解第四阶段暴露的死结，最终让模型里的每一个环节——动力学f、读出映射R、双边测量方向——都从零涌现出来，逼近&#x27;零手工设计&#x27;。</p></div>
+        <div class="steps"><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">1</span><span class="step-t">符号回归找到可读公式</span></div>
+          <div class="lab"><b>思路/方法 </b>自研遗传算法(表达式树)引擎，直接搜<b>可读的解析表达式</b>，而不是像 PINN 那样训练出一个看不懂的黑箱——目标是看 cos 到底从哪种数学结构里冒出来。先用已知答案的题(精确搜出 sin(x0)+x1/2)校准引擎本身靠不靠谱，再往下走。这条线走得并不顺：判据被连续攻破了好几次，每次攻破都倒逼换一次更严格的判据，最后才稳定搜到真正的公式。</div>
+          <div class="res"><b>关键结果 </b>找到可读公式 f=cos(x)·sin(x)，5/5 seed达标，3个独立起点收敛到同一解。</div>
+          <div class="bd"><b>诚实边界 </b>y/z维用固定基底，非分形——与2b互补(有公式无分形)。</div>
+          
+          <div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① 框架①搜分布 ρ(λ|θ)——判据被钻空子</div><div class="mbox-b">先搜'给定测量夹角 θ，隐变量 λ 该服从什么条件分布，才能让关联贴近 −cos'。第一版判据只看'曲线像不像 cos'，立刻被钻了空子：搜出解 w=cos(2λ)，这个解<b>完全不依赖 θ</b>(测量依赖代价 I(λ;θ)=0)，却硬凑出了 cos 形状——这是数值巧合，不是真机制，直接违反 Hall 下界(复现 −cos 理论上不可能免费)。<br><br>教训：光看'形状像不像'不够，必须同时看'代价合不合理'。加上'代价须接近 Hall 值'这道门禁后重搜，才找到真解 w∝sin²(λ)/g(θ)，代价 0.0672 bit，几乎正好卡在 Hall 理论下界 0.0663 上。<img loading="lazy" class="mimg" src="images/框架1_搜分布产生cos.png" alt="框架1搜分布"><div class="cap"><b>左</b>—红线(符号回归搜出的真解)明显比灰绿线(一个已知的错误公式 w=1+cos(λ−θ))更贴近黑色目标(量子−cos)，差距从0.137降到0.023；<b>右</b>—搜出的权重 w(λ,θ) 热力图，对应可读表达式 (−0.932/(tanh(tanh(x1))/sin²(x0)))，能明显看出结构，不是随机噪声。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 框架②搜测量函数——判据本身出了更深的问题</div><div class="mbox-b">接着搜'测量函数'这条支线：固定'测量独立'(λ 分布不依赖 θ)，搜测量函数 B(λ,θ) 能不能凑出 cos 关联。结果出现'假警报'——单条 E(θ) 曲线又被拟合成了 cos 形状(vs cos差仅0.035)。<br><br>这次问题更深：不是搜索算法作弊，是<b>判据本身选错了</b>——'测量独立'前提下，模型其实退化成了纯经典/定域模型，而定域模型本来就能模仿单条曲线，不违反任何贝尔类定理。真正能证明'非经典'的判据必须是 <span class="term" onclick="event.stopPropagation();showGloss('CHSH')">CHSH ⓘ</span>(需要 Alice、Bob 各自两种设置的四点组合)，只看一条曲线永远会被骗。这个诊断直接决定了下一步必须换判据。<img loading="lazy" class="mimg" src="images/框架2_搜测量函数.png" alt="框架2搜测量函数"><div class="cap">左右两个独立实验(测量独立 vs 设置依赖分布)搜出的测量函数，都能让单条 E(θ) 贴近−cos(vs cos差0.035/0.036)——两条完全不同前提下的搜索都'成功'了，反而说明这道判据分辨不出真假，必须换更严格的判据。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ 框架③搜动力学 f——判据连续被攻破三次才修好</div><div class="mbox-b">这是最硬的一层：不搜分布或测量函数，直接搜最底层的动力学规则 f(λ) 本身。这条线自己也走了三版：<br><br><b>v1(自创CHSH采样判据)</b>：搜出一个 S=3.40 的解，看似'突破'了量子极限 2√2≈2.828——但这不是好事，复现真实量子力学不可能超过 Tsirelson 界，超出即意味着作弊。复核发现分布偷偷'看到'了Alice、Bob 两边设置的联合信息(signaling)，物理上不允许。作废。<img loading="lazy" class="mimg" src="images/框架3_CHSH搜动力学.png" alt="框架3v1 CHSH自创判据"><div class="cap">右图：搜出的动力学(红)CHSH读数 S=3.40，远超量子极限2.828(绿虚线)——数值本身就是红旗；左图关联曲线也跳动剧烈、不平滑，进一步印证这是钻了判据空子的假解，不是真实的量子关联复现。</div><br><b>v2(同源结构重建)</b>：吸取教训，改成和阶段④'同源生成'完全一样的思路——一条不含设置信息的圆周映射，Alice/Bob 的设置选择和隐变量 λ 全部从同一条轨迹的不同读出点'长出来'，并加硬性 no-signaling 门禁。这次 CHSH 读数精确落在 S=2.83(量子极限)，no-signaling 偏差仅0.017，看起来完美——<b>但这恰恰是新漏洞</b>：CHSH 只检查 4 个特定角度组合，搜索器学会了只讨好这 4 个点。<img loading="lazy" class="mimg" src="images/框架3重建_同源CHSH搜动力学.png" alt="框架3v2 同源重建"><div class="cap">左图 CHSH 读数完美落在量子极限；但<b>右图</b>摊开成全角度曲线一看，红线在 Δ≈95° 附近整条曲线像台阶一样突然跳变，完全不是平滑的 −cos——这就是'4点过拟合'：只讨好判据检查的那几个点，曲线其余部分完全走样。</div><br><b>v3(终版：换判据而非再堵漏洞)</b>：不再自己发明新判据，直接复用阶段④'2b'分形攻坚里已经反复验证过、天然防作弊的判据——同源结构本身保证 no-signaling，加上'全角度 gap'(整条曲线都要贴近 −cos，不能只讨好几个点)。1D 版本搜出 gap=0.101(仍不够好)，升级到 3D 后单次搜出 gap=0.047，明显改善。<img loading="lazy" class="mimg" src="images/框架3终版3D_符号回归搜3D动力学.png" alt="框架3v3终版3D"><div class="cap">3D 版单次搜出 fx=|cos(x·tanh x)|，关联曲线(红)全程紧贴量子目标(黑虚线)，vs cos差仅0.047——换判据之后终于搜出了形状真正靠谱的公式，但这仍只是单次结果，还没有验证稳不稳。</div></div></div><div style="margin-top:16px;max-width:760px;margin-left:auto;margin-right:auto"><img loading="lazy" style="width:100%" src="images/3D符号f多seed钉死.png" alt="多seed钉死最终结果"><div class="cap"><b>左</b>—5 个独立搜索种子(s0~s4)，每个的 gap 都在多个系综上复测取均值±std：全部远低于 0.08 门槛(红虚线)，s1/s2/s4 三个种子的结果高度接近(≈0.026)——<b>5/5 全部达标</b>；<b>右</b>—最好种子(seed1)搜出的公式明确标注为 <b>f(x0) = cos(x0)·sin(x0)</b>，gap=0.026，绿线几乎完全贴合黑色量子目标曲线，明显甩开灰色三角波。</div></div><div style="margin-top:14px"><b>最终结果</b>：阶段④'2b'吃过单种子结果可能是运气的亏(best seed 0.011、另一种子 0.136)，这里没有直接采信 v3 单次跑出的结果，而是独立跑 5 个搜索种子、每个再多系综复测——这才是'关键结果'那句'5/5 seed达标'真正的验证过程。全过程走了三版判据(CHSH自创→同源重建仍4点过拟合→复用2b已验证判据)才找到真正防得住的版本，和整个项目'先校准、不轻信单次结果、结果超预期就查代码'的方法论铁律是同一套逻辑的重演。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">2</span><span class="step-t">Koopman谱方法</span></div>
+          <div class="lab"><b>思路/方法 </b>用<span class="term" onclick="showGloss('Koopman方法')">Koopman ⓘ</span>谱直接求不变测度(主特征向量)，无需可微规则即可算奇异/分形测度。</div>
+          <div class="res"><b>关键结果 </b>引擎确立、能算奇异测度，但三版设置依赖都产cos未通。</div>
+          <div class="bd"><b>诚实边界 </b>诚实负结论：谱方法擅长&#x27;给定动力学求测度&#x27;，但产cos的难点在&#x27;设置依赖耦合结构&#x27;，恰非其强项——不是银弹。</div>
+          
+          <div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① 引擎搭建 + 校准 —— 验证谱方法能不经可微规则正确算出已知测度</div><div class="mbox-b">终极死结是『真不变集分形=处处不可微』，PINN 和符号回归都要求规则可微才能训练。Koopman(转移算子/Perron-Frobenius算子)提供一条侧路：不追踪具体的混沌轨迹，而是研究『把概率分布向前搬一步』这个线性算子的谱——不变测度就是该算子特征值为1对应的主特征向量，理论上不需要底层规则可微，分形/奇异测度也能作为特征向量被直接求出，可能绕开这个死结。<br><br>具体做法：把状态空间离散成N个格子，撒点估计每格演化一步后落到哪个格子，构造转移矩阵(马尔可夫矩阵)，再用特征值分解直接求出特征值最接近1的特征向量当不变测度——全程无训练、无梯度、不会发散。按『先校准』纪律，先在两个有解析答案的题上验证：锚点A(无理数旋转映射)应给出均匀测度，锚点B(logistic映射f=4x(1−x))应给出解析的arcsine测度。<img loading="lazy" class="mimg" src="images/koopman引擎_校准.png" alt="Koopman引擎校准图"><div class="cap">校准图：<b>左</b>—logistic映射的谱方法测度(蓝)与理论arcsine密度(红虚线)中段相关系数0.96，两端同样发散，吻合；<b>右</b>—转移矩阵的特征值分布，主特征值精确落在1(红星)上，对应不变测度。两项校准均通过，确认谱方法能不经可微规则正确算出已知测度——这是PINN和符号回归都不具备的能力。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 三版设置依赖尝试 —— 都卡在三角波附近</div><div class="mbox-b">引擎校准通过后，把它接到『设置依赖』结构上——让转移算子本身依赖测量角度θ(记作L_θ)，求出的不变测度ρ_θ随θ变化，再用sign测量读出关联E(θ)，看能否贴上量子−cos(θ)。三版尝试如下：<br><br><b>v1·光滑平移</b>：给基础混沌转移算子加一个随θ平移的单峰光滑偏置。这个思路重复了此前『攻法B』(阶段四同源生成)已经踩过的坑——单纯平移一个光滑分布只改变强度、不改变形状，结果卡在三角波附近，vs cos差距约0.135，和三角波基线(约0.14)几乎没有本质区别。<br><br><b>v2·二次谐波调制</b>：吸取v1教训，改用『二次谐波』偏置(bias含cos(2(λ−θ/2))项)，想让不变测度的形状而不只是强度随θ变化。扫偏置强度从0到4，代价I(λ;θ)确实能被推到很高(达0.69 bit，远超Hall的0.0663 bit)，但vs cos差距没有随之缩小，反而不降反升——花了更多『代价』却没换来cos的形状。<img loading="lazy" class="mimg" src="images/koopman攻cos.png" alt="v2二次谐波调制结果"><div class="cap">二次谐波调制的结果：<b>左</b>—关联曲线E(θ)(绿)相比θ无关基线(橙)略微靠近量子−cos(黑虚线)，但仍明显偏离，更接近三角波(灰虚线)；<b>右</b>—不变测度ρ_θ(λ)随θ变化的热图，显示测度确实在挪动，但整体形状变化不大。</div><br><b>v3·奇异测度移动</b>：换个角度——直接用logistic型的转移算子(其不变测度天生就是奇异的arcsine型，两端发散，接近分形)，先校准确认基底测度确实『尖』(奇异性指标max/mean远大于均匀分布的1)，再让θ去移动这个尖峰的相位位置。这版结果最接近门槛，vs cos差距降到约0.10，但仍未穿过cos达标线(0.08)。<img loading="lazy" class="mimg" src="images/koopman攻cos_v2奇异测度.png" alt="v3奇异测度移动结果"><div class="cap">奇异测度移动的结果：<b>左</b>—关联曲线(绿)比前两版更贴近量子−cos(黑虚线)，vs cos差距缩小到约0.10，但仍未达标；<b>右</b>—不同θ下的不变测度形状，三条曲线(θ相位0/2.5/4.5)都是同样尖锐的单峰，只是峰的位置随θ平移，峰本身的形状并未随θ改变。</div></div></div><div style="margin-top:14px"><b>最终结果</b>：对照符号回归框架①的真解 w∝sin²(λ)/g(θ)，关键不是<b>整块测度挪位置</b>，而是<b>测度形状随θ做特定的耦合变化</b>——<b>Koopman擅长给定规则求测度，不擅长雕出这种耦合结构</b>，这正是它的能力边界，三次尝试因此殊途同归。<b>引擎本身是成功的</b>(不依赖可微规则、纯算子谱算出奇异/分形测度)，但产生cos这个目标上三版均未通过，诚实记录为负结果。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">3</span><span class="step-t">破&#x27;分形vs可微&#x27;死结</span></div>
+          <div class="lab"><b>思路/方法 </b>到这一步为止，手里攥着两个'半成功'，谁也拼不进谁：阶段④'2b'有真分形但没有可读公式，阶段⑤符号回归有可读公式但不是分形。这一步要做的，是把这两个半成品拼到同一个模型里。</div>
+          <div class="res"><b>关键结果 </b>分形性来自动力学结构、cos来自驱动函数，二者不再互斥。死结解开。</div>
+          <div class="bd"><b>诚实边界 </b>第1步即抓到倍增映射浮点死亡bug(尾数耗尽)，加光滑扰动+守卫修正。</div>
+          
+          <div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① 死结是什么——两个半成品拼不到一起</div><div class="mbox-b">阶段④'2b'分形攻坚：吸引子是真分形(D2≈1.84)，但靠的是 baker 映射——一段段硬编码的分段压缩规则，没有可读的解析公式。阶段⑤符号回归：搜出了可读公式 f=cos(λ)·sin(λ)，但用的动力学是保面积的环面映射，不会收缩，吸引子会填满整个空间，不是分形。<br><br>死结的表面逻辑是：'真正的不变集=分形=处处不可微，而可读的符号公式此前只能在光滑、非分形的底子上找到'——听起来'可读'和'分形'这两个要求天然打架。</div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 打破死结的关键想法——分形来自结构，可读来自驱动函数</div><div class="mbox-b">不去追'一个不可微的符号表达式'(这个要求本身就自相矛盾——符号表达式通常就是光滑的)。而是把'分形从哪来'和'可读从哪来'这两件事拆开，分别用两个独立的旋钮控制：结构里专门设一个<b>膨胀维 x</b>(每步乘 BX≥2，负责制造混沌)，另外两个<b>收缩维 y、z</b>，收缩率 a&lt;1，具体往哪收缩由待搜索的驱动函数 Sy、Sz 决定。<br><br>只要 a&lt;1，y、z 方向的测度就会指数级塌缩——这一步<b>分形是结构上被强制保证的</b>，不需要精调、不是碰运气；同时 Sy、Sz、以及膨胀项里加的扰动 gx，全都是<b>光滑的符号表达式</b>，所以是可读的。分形性来自'收缩'这个几何结构，可读性来自'驱动函数'，两者从设计上就不再互斥。</div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ 只搭骨架不搜cos——两项校准</div><div class="mbox-b">按方法论铁律，不能一上来就把'搜cos'也塞进去——那样如果搜出好结果，分不清是分形结构本身站得住，还是搜索器凑巧碰上的。所以第一步<b>只搭骨架、只做校准，暂时不接 cos 目标</b>：驱动函数先用固定的光滑示例(不是搜出来的)，只验证'这套结构本身是不是分形'。<br><br><b>校准A(工具本身准不准)</b>：先让 D2 估计器读一个填满立方体的点云，必须读出 ≈3，否则工具本身就不可信。<b>校准B(结构本身分形不分形)</b>：扫 4 个收缩率 a=0.25/0.35/0.45/0.55，检查实测 D2 是不是全部小于 3(分形)，而且要随 a 增大而增大(收缩越弱、越接近填满——这是理论该有的单调关系)。<img loading="lazy" class="mimg" src="images/破死结_D2校准.png" alt="D2校准结果"><div class="cap">四个收缩率(绿柱=实测D2)全部低于填满线(3，红虚线)，也全部低于分形门槛(2.8，橙点线)，并且随 a 增大而单调上升，和灰柱(Cantor理论值)的趋势一致——结构本身是分形，不是碰运气。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>④ 中途抓到的一个真实bug——浮点死亡</div><div class="mbox-b">第一次跑，就撞上了'倍增映射浮点死亡'——膨胀项如果写成精确的 x'=(2x) mod 1，每迭代一步都会在浮点数里丢失1个二进制尾数位，大约52步后 x 会被磨到精确坍缩成0。这不是'轨迹真的收缩了'，是数值精度耗尽的假象，会让分形维数的测量整个失真。<br><br>修法：给膨胀项加一个光滑扰动 gx(x)=0.13·sin(2πx)，破坏'精确倍增'这个导致尾数耗尽的特性；并且专门加了一道'膨胀维守卫'(要求 x 的标准差必须大于0.2)，以后再出现这类坍缩能被自动抓出来，不用每次靠肉眼看图。这和整个项目'先校准、结果超预期就查代码'的方法论铁律是同一套逻辑。</div></div><div style="margin-top:16px;max-width:760px;margin-left:auto;margin-right:auto"><img loading="lazy" style="width:100%" src="images/破死结_吸引子投影.png" alt="吸引子投影"><div class="cap"><b>左(x-y投影)</b>—收缩维 y 上能看出一层层的 Cantor 层状结构，不是均匀糊成一片；<b>右(y-z投影)</b>—两个收缩维 y、z 张成 Cantor×Cantor 的环状纹理，肉眼就能看出这不是一片实心圆盘，而是无数层同心圆环叠出来的分形结构。</div></div><div style="margin-top:14px"><b>产出结果</b>：四个收缩率全部读出 D2&lt;2.8，且随 a 单调上升，立方体校准通过，膨胀维守卫也通过——结论是这个耗散符号映射的分形性是<b>结构自带的</b>，不是运气；而驱动函数本身是光滑符号树，可读性也保住了。<b>分形和可读第一次同时成立</b>，死结解开。<br><br>但这一步只是搭好骨架、证明了骨架靠谱，驱动函数 Sy、Sz、gx 还是手工给的固定示例，<b>还没有真正搜出能产生 cos 的驱动函数</b>——那是下一张卡'三合一钉死'要做的事：把这几个驱动函数交给符号回归去搜，目标是让 cos 也在这个'分形+可读'的骨架上涌现出来。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">4</span><span class="step-t">三合一钉死，读出R与方向也涌现</span></div>
+          <div class="lab"><b>思路/方法 </b>上一步只搭骨架、验证了'分形+可读'这套结构本身站得住，驱动函数 Sy、Sz、gx 还是手工给的固定示例。这一步要做的，是把这几个驱动函数<b>真正交给符号回归去搜</b>，目标是在保住分形的前提下让关联贴近 −cos——如果成功，分形、可读公式、cos 三样东西就第一次同时出现在同一个模型里，这正是'三合一'这个名字的由来。三合一钉死之后，模型里还剩两处硬编码没有涌现：从吸引子态到可观测量的<b>读出映射R</b>、Alice和Bob各自选的<b>测量方向</b>——这一步接着把这两处也交给符号回归去搜，逼近'零手工设计'。</div>
+          <div class="res"><b>关键结果 </b>5/5 seed稳健(gap≈0.018)，曲线贴-cos，曲线复现下界≈0.068(Hall量级)；读出R涌现4/4达标；双边方向经三轮结构诊断(共享隐变量→球面参数化→振幅法CHSH)后等效CHSH≈2.80。</div>
+          <div class="bd"><b>诚实边界 </b>第4步抓到测量退化(P(A+)=0.998，Alice名存实亡)→加测量平衡守卫；第6步修掉&#x27;假超Tsirelson 3.11&#x27;的CHSH单点公式虚高bug。</div>
+          
+          <div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① 第2步：把驱动函数交给符号回归搜——三重防作弊守卫</div><div class="mbox-b">只搜一棵树 Sy，Sz 强制设成 Sy 的镜像(Sz=−Sy)——既降低了搜索维度，又天然制造出 y、z 两个收缩方向'反相'的结构。fitness 里绑了<b>三重防作弊守卫</b>，一个都不能少：①判据用全角度 gap，不用裸 CHSH(前面符号回归那条线已经吃过'CHSH只看4个点会被骗'的亏)；②分形守卫 D2&lt;2.6，防止搜索器为了讨好 cos 目标偷偷把吸引子撑回填满状态，退回'有公式没分形'的老路；③膨胀维守卫 x.std&gt;0.2，防止重蹈上一张卡'倍增映射浮点死亡'的覆辙。<br><br>正式搜之前，先<b>校准 fitness 本身</b>：手工给一个'该产cos'的驱动(sin/cos型)和一个'只会给平凡结果'的驱动(常数)，确认 fitness 分数能把两者明显分开，判据本身可信了才敢放大搜。<img loading="lazy" class="mimg" src="images/三合一_第2步_搜产cos驱动.png" alt="第2步搜产cos驱动"><div class="cap"><b>左</b>—3个搜索种子的关联曲线都明显贴近黑色 −cos 目标，同时 D2 仍守在分形范围内；<b>右</b>—最佳种子的吸引子投影，能看出分形层状结构没有被搜索破坏。这只是3个种子的小系综，还没查过是否作弊，需要下一步继续钉死。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 第3步(A)：5×5多seed多系综钉死稳健性</div><div class="mbox-b">第2步的结果只是3个种子的小系综，为了防'单次侥幸'和'评估本身的涨落'两种风险，这一步把复核规模拉大：5个搜索种子 × 每个种子再配5个系综种子复测，一共25次独立运行。最终5/5全部达标，gap 稳定在约0.018附近，证明第2步搜出的驱动函数不是孤例。</div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ 第3步(B)：no-signaling硬检验——这里抓到一个真实的方法论bug</div><div class="mbox-b">要检验的是'Alice 的读出结果分布，不能因为 Bob 选了不同的测量方向而改变'。但脚本注释里坦白：<b>第一版检验方法本身是错的</b>——当时按 Bob 的<b>测量输出结果</b>(B=+1的那部分)去条件化，再看 Alice 的分布会不会变；但 A 和 B 本来就是相关的(这正是 cos 关联的来源！)，这样测出来的'漂移'根本不是 signaling，只是关联本身，等于拿关联当作弊证据，判据设计错了。<br><br>修正后的正确做法：扫描 Bob 的<b>测量方向</b>(不是结果)，每个方向配一套独立的新系综(制造真实的采样噪声，避免自己骗自己)，看 Alice 的边缘概率 P(A=+1) 是否只在噪声量级内波动。这是这个项目'度量失效编年史'里又一次被自己抓出来的错误。修正后实测：漂移量落在采样噪声本底附近，通过。</div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>④ 第3步(C)：代价验证——排除信息层面的作弊</div><div class="mbox-b">复用前一阶段已经校准过的凸优化LP(喂入理想 −cos 必须读出≥0.066 bit，先验证这把尺子没坏)，去算这次搜出的方案实际付出的测量依赖代价。如果代价接近0却产出了 cos 形状，那是作弊嫌疑(可能靠 signaling 或某种退化解蒙混过关)；如果代价接近 Hall 量级，才说明这是一个诚实的超决定论解。结果：曲线复现下界≈0.068，和 Hall 的0.0663同一量级，通过。<img loading="lazy" class="mimg" src="images/三合一_第3步_钉死代价验证.png" alt="第3步钉死代价验证"><div class="cap">三面复核：<b>左</b>—5×5多seed多系综稳健性，gap全部稳定在门槛以下；<b>中</b>—no-signaling实测，Alice边缘概率随Bob测量方向的漂移落在噪声本底内；<b>右</b>—代价验证，曲线复现下界≈0.068，贴近Hall理论下界，不是靠作弊换来的cos形状。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>⑤ 第4步：读出映射R涌现——抓到一次'测量退化'的真bug</div><div class="mbox-b">固定住已经钉死的动力学(Sy=2.48·x0)不再动它，只搜读出映射：搜一棵'分量生成器'树，通过变量循环移位(x→y→z)自动生成 Rx、Ry、Rz 三个分量，既降维又保证结构对称。搜之前先校准：手写读出(已知好解)必须 gap 低，退化成常数的'乱读出'必须 gap 高，评估分得清好坏才敢放开搜。<br><br>搜索过程中真的撞上一个问题：如果只看 gap(曲线像不像cos)，符号回归会找到一种'作弊'解——把读出偏向球面的一极，使 <b>P(A=+1)≈0.998</b>，Alice 的测量结果几乎变成了一个常数，cos 关联全靠 Bob 单侧硬撑出来，Alice 这个'测量'名存实亡，不是真正的二值测量。修法是加一道<b>测量平衡守卫</b>：偏离 50/50 超过 0.1 就重罚，逼着搜索器找真正意义上的二值测量。修正后 4 个搜索种子全部达标(4/4)，代价验证也通过(≈Hall)。<img loading="lazy" class="mimg" src="images/三合一_第4步_读出也涌现.png" alt="第4步读出也涌现"><div class="cap"><b>左</b>—4个搜索种子涌现读出的gap全部达标(绿柱)；<b>中</b>—涌现读出的关联曲线(绿)贴近量子-cos(黑虚线)；<b>右</b>—代价验证，涌现读出实测代价贴近Hall下界，不是靠signaling蒙混过关。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>⑥ 第6步：双边测量方向涌现——三轮结构诊断，逐层修物理错误</div><div class="mbox-b">目标是连 Alice、Bob 各自选的测量方向都从同源轨迹里涌现出来。这条线连续踩了三次坑，每次都是<b>物理结构错了</b>，不是搜索能力不够：<br><br><b>①共享隐变量</b>：第一版让 Alice 测轨迹上某一时刻的向量 vA、Bob 测另一时刻的向量 vB(两个不同的读出点)。但 x 维是膨胀混沌维，迭代十几步后完全去相关，vA 和 vB 之间的关联被混沌冲得干干净净——测出来的 CHSH 只有 0.17，曲线几乎是条平零线。真正的 Bell 情景要求 Alice、Bob 测的是<b>同一个共享隐变量态 v(λ)</b>，只是各自选不同方向去测它；改成共享同一个 v 后，关联才重新出现。<br><br><b>②球面参数化</b>：早期版本把测量方向锁在赤道面(方向向量的 z 分量不参与)，导致曲线畸变。修正为让极角、方位角都在<b>完整球面</b>上涌现(两棵树分别搜极角和方位角)，才是无偏的构型。<br><br><b>③振幅法CHSH——修掉'假超Tsirelson'的判据bug</b>：早期用最原始的单点公式 S=|3E(45°)−E(135°)|，这个公式会把 45° 那一个点上的局部偏差<b>放大3倍</b>。结果曲线本身 gap 只有 0.022(几乎完美贴cos)，却因为这个放大效应读出 S=3.1，看起来'超过了量子力学的 Tsirelson 上界 2√2≈2.828'——如果信了，就意味着模型在 signaling 作弊。复核后发现问题出在判据公式本身：改成对整条曲线做振幅拟合(S_eff=2√2·amp)，不再被单点噪声放大，重新算出来的 S 落在约 2.80——超经典上限 2、但没超 Tsirelson，是诚实结果，不是作弊。这是又一次'结果超预期就查代码'当场抓出的假阳性。<img loading="lazy" class="mimg" src="images/三合一_第6步_双边同源涌现.png" alt="第6步双边同源涌现"><div class="cap"><b>左</b>—4个搜索种子的CHSH读数(振幅法)，多数落在经典上限2与Tsirelson上限2√2之间，是超经典而未超量子的诚实区间；<b>中</b>—双边球面涌现的关联曲线贴近量子-cos；<b>右</b>—no-signaling检验，Alice边缘概率随不同系综的漂移落在噪声floor带内。</div></div></div><div style="margin-top:14px"><b>最终结果</b>：分形(D2≈1.72)、可读公式(Sy∝x0这类形式)、cos关联三样东西第一次在同一个模型里同时成立，且经5/5稳健、no-signaling、代价验证三重复核；在此基础上，读出映射R(4/4达标)与双边测量方向â/b̂(经三轮结构诊断，等效CHSH≈2.80，超经典未超Tsirelson)也相继从同源轨迹涌现出来。到这一步，模型里手工设定的只剩'目标要复现cos'和防作弊守卫本身——动力学f、读出R、双边测量方向全部是符号回归搜出来的可读公式，不是人为钉进去的。<br><br>三段公式串起来就是这条被逐步钉死、逐步复用的<b>公式链</b>：<br><span style="color:#c0392b">驱动函数　Sy = 2.48·x0　(Sz = −Sy)</span><br><span style="color:#c0392b">读出映射　R = cos(e²·tanh(x1))　(循环移位生成Rx/Ry/Rz)</span><br><span style="color:#c0392b">Alice测量方向　极角 ≈ 2.6　方位 ≈ 0.034　(seed0最优解，实测gap=0.022，CHSH=2.805)</span><br>前两条是复杂的符号表达式，第三条(Alice方向)搜出来的却是<b>接近常数的偏移角</b>，不是状态的复杂函数——多个种子(seed1方位含变量x2，其余种子方位也都在±2以内的小常数附近)显示，'方向也能涌现'这件事本身成立，但涌现出的最优解往往是简单的近定轴偏移，而非精巧的状态依赖函数，这也如实记录，不夸大。</div>
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">5</span><span class="step-t">全端到端零手工</span></div>
+          <div class="lab"><b>思路/方法 </b>前面每一步都是<b>分步固定</b>：三合一只搜f、固定读出和方向；读出R涌现时固定住f、只搜R；双边方向涌现时固定住f和R、只搜方向。这一步不再留任何东西不动，把<b>动力学f、读出R、Alice极角、Alice方位四棵符号树打包进同一条染色体</b>，一次性联合演化——这是离'零手工设计'最近的一次尝试，也顺带补上了上一步'双边方向涌现'从未验证代价的缺口。</div>
+          <div class="res"><b>关键结果 </b>5/5 seed达标，各环节公式各异却都收敛到复现量子-cos；模型里唯一人为设定=目标cos+防作弊守卫。</div>
+          <div class="bd"><b>诚实边界 </b>调读出锐度可使amp≈0.96、曲线复现下界≈0.064贴Hall(硬红线守卫确认不违反Hall定理)。</div>
+          
+          <div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>① 校准：先拼出一个'已知好答案'，验证评分标准分得清好坏</div><div class="mbox-b">不是空手开搜，而是先把前几步各自搜到的达标公式手工拼成一个组合——f=2.48·x0(第2步)、R=cos(e²·tanh(x1))(第4步)、Alice极角=2·x0(第6步)、方位≈常数0——喂给这次的联合评分函数，确认它给这个'好组合'打低罚分、给一个全常数的'坏组合'打高罚分。评分标准能分辨好坏，才敢放开搜索。</div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>② 联合搜索：全部守卫直接写进fitness，四棵树协同过关</div><div class="mbox-b">5个搜索种子，每个种子跑140个个体、45代演化，罚分函数里一次性绑了全部防作弊条件：曲线gap要低(贴cos)、D2&lt;2.6(分形)、CHSH落在(2, 2√2+容差]区间(超经典但不超Tsirelson)、Alice和Bob两边的测量结果都要接近50/50平衡(不能有一边退化成常数)。任何一项崩了就重罚，逼着四棵树协同过关，而不是牺牲一环换另一环达标。</div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>③ 收尾复核：代价LP + no-signaling，堵上上一步没查的漏洞</div><div class="mbox-b">对每个种子搜出的最优解，再做两项独立复核：①用凸优化LP算这条曲线的信息代价，必须≥0.04(接近Hall量级，不能是靠signaling把代价压到接近0蒙混过去)；②扫8个独立系综看Alice的边缘概率漂移，必须落在采样噪声本底内，确认没有signaling。<img loading="lazy" class="mimg" src="images/三合一_第7步_全端到端联合.png" alt="第7步全端到端联合"><div class="cap"><b>左</b>—5个搜索种子的CHSH读数全部达标(5/5)，落在经典上限2与Tsirelson上限2√2之间；<b>中</b>—全端到端联合搜出的关联曲线(绿)紧贴量子-cos(黑虚线)；<b>右</b>—代价复核，实测曲线复现下界贴近Hall下界，no-signaling漂移落在噪声本底内。</div></div></div><div class="mbox collapsed"><div class="mbox-h" onclick="toggleDetail(this)"><span class="fold3">▸</span>④ 结果与四条诚实边界——脚本自己主动列出的降级声明</div><div class="mbox-b">5个种子全部通过全部守卫，而且<b>各个种子搜出的f、R、方向公式形式彼此都不一样</b>，却殊途同归地收敛出能复现量子-cos的效果——说明这不是记住了一个孤例，而是这套结构本身容许多种解都成立。<br><br>但脚本自己在结论里主动列了四条边界，一个都不含糊：<b>①</b>'CHSH≈2.8'是把曲线振幅换算出来的(S=2√2·amp)，不是真的做了四角独立Bell测量，和gap判据其实说的是同一件事，不是两份独立证据；<b>②</b>'代价≈Hall'是'这条cos曲线理论上最少要花多少信息'这件事本身的数学结果(Hall定理)，曲线像cos代价按定义就会≈Hall，不是机制里的测量依赖被独立测出来的；<b>③</b>no-signaling是靠模型结构本身保证的(Alice的读出根本不包含Bob方向的信息)，'漂移检验'测的是这个保证在数值上有没有被破坏，是结构论证，不是从零验证；<b>④</b>D2&lt;2.6只是设了个上限，个别种子的D2实际上≈1(接近退化成一维线)，分形丰富度不高，但仍算通过。</div></div><div style="margin-top:14px"><b>最终结果</b>：模型里唯一还算'人为设定'的，只剩目标本身(要复现-cos)和防作弊守卫的具体阈值——动力学f、读出R、Alice测量方向的极角与方位，全部是符号回归从零搜出来的可读公式，不是人为钉进去的。后续(第8步)还做了一次延伸：调读出的'锐度'，能把振幅推到≈0.96、代价压到≈0.064，非常贴近Hall下界0.0663，同时设了一条<b style="color:#c0392b">硬性红线守卫</b>——如果哪次出现'振幅≈1却代价低于0.0663'，那在物理上直接违反Hall定理，必然是算法出错或作弊，要立刻报警，不能当成'突破'来庆祝。这条红线守卫确认了整个过程没有踩到这个物理禁区。</div>
+        </div></div>
+        <div class="summary" style="border-color:#c0392b"><b>阶段小结 </b>至此在自带分形的耗散符号动力学上，端到端搜出了可读的f/R/双边方向，复现量子-cos关联，逼近&#x27;零手工设计&#x27;。但这些成就的证据强度需严格界定，见第六阶段。</div>
+      </div>
+    </section><section class="stage" id="s6">
+      <div class="stage-h" style="border-color:#c0392b" onclick="toggleStage(this)">
+        <span class="stage-name" style="color:#c0392b">第六阶段 · 严谨 · 全项目审计</span>
+        <span class="stage-sub">先校准 / 防作弊 / 自我纠错</span>
+        <span class="fold" style="color:#c0392b">▾</span>
+      </div>
+      <div class="stage-body">
+        
+        <div class="intro"><p>研究越接近&#x27;成功&#x27;，越要警惕自我欺骗。本阶段是全研究的诚信保障：一份贯穿始终的&#x27;度量失效编年史&#x27;，以及一次覆盖全部120个文件的代码审计——并据审计结论，把若干&#x27;表述强于证据&#x27;的地方主动降级。</p></div>
+        <div class="steps"><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">1</span><span class="step-t">度量失效编年史 · 11次</span></div>
+          <div class="lab"><b>思路/方法 </b>signaling作弊(共用轨迹点S=2.776 / 依赖相对角S=3.4)、CHSH角度bug、单曲线过拟合、cos(2λ)型sign作弊(I=0假cos)、D2估计器低估、倍增映射浮点死亡、测量退化P(A+)=0.998、no-signaling条件化方向错、CHSH单点公式虚高(假超Tsirelson 3.11)……</div>
+          <div class="res"><b>关键结果 </b>全部靠&#x27;先校准/多seed/结果超预期就查代码&#x27;的纪律当场抓获、作废，没有一个进入最终结论。</div>
+          <div class="bd"><b>诚实边界 </b>这份清单本身是严谨性的证据，而非污点。</div>
+          
+          
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">2</span><span class="step-t">全项目代码审计</span></div>
+          <div class="lab"><b>思路/方法 </b>对全部120个文件、18040行做并行审计(7个审计单元逐文件通读)，专查正确性bug/作弊模式/度量失效/结论是否被代码支撑。</div>
+          <div class="res"><b>关键结果 </b>结论：无数据造假、无signaling假阳性、无假&#x27;超Tsirelson&#x27;、无假&#x27;突破Hall&#x27;——无假结论进入最终结论。分阶段评级中，基础与代价曲线环节最扎实 / 整体B~B+。</div>
+          
+          
+          
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">3</span><span class="step-t">诚实降级 · 严格边界</span></div>
+          <div class="lab"><b>思路/方法 </b>审计抓出的是&#x27;过度解读&#x27;而非造假。据实降级：</div>
+          <div class="res"><b>关键结果 </b>① &#x27;代价≈Hall&#x27;是复现关联曲线的理论最小互信息(Hall定理本身，曲线像cos则必≈Hall)，≠机制真实I(setting;λ)高效；② &#x27;CHSH=2.80&#x27;是振幅换算S=2√2·amp，非4角独立Bell测量；③ &#x27;no-signaling&#x27;由结构保证而非实测确认。</div>
+          <div class="bd"><b>诚实边界 </b>已同步修正主文档overclaim(0.046=Hall)、D2旧值、&#x27;3/5称稳健&#x27;等表述。</div>
+          
+          
+        </div><div class="step">
+          <div class="step-h"><span class="step-n" style="background:#c0392b">4</span><span class="step-t">真开放难题(非bug，需新工作)</span></div>
+          <div class="lab"><b>思路/方法 </b>诚实标注研究尚未解决的：</div>
+          <div class="res"><b>关键结果 </b>机制的真实I(setting;λ)从未被可靠直接测量(高维互信息估计器是真实工具墙)；&#x27;曲线复现下界≈Hall&#x27;≠&#x27;机制信息效率达下界&#x27;(未证)；cos稳定达标(5/5)与amp精确=1仍开放。</div>
+          <div class="bd"><b>诚实边界 </b>这些是研究的诚实终点，也是下一站的起点。</div>
+          
+          
+        </div></div>
+        <div class="summary" style="border-color:#c0392b"><b>阶段小结 </b>一个会主动请代码审计、并据实修正自己overclaim的研究记录——这本身就是科学严谨性的一部分。&#x27;契合宇宙的规则&#x27;核心开放难题仍未解决，研究继续。</div>
+      </div>
+    </section>
+
+  <h2 class="sec" id="board">研究现状 · 一句话</h2>
+  <div class="lead">
+    <b>做出了什么：</b>一个原型级的『可微不变集代理』——在自带分形(测度为零)的耗散符号动力学上，端到端搜出可读的
+    动力学f、读出R与双边测量方向，复现量子-cos关联；其关联曲线的理论最小测量依赖与Hall下界一致，结构上满足no-signaling。<br><br>
+    <b>严格边界：</b>"代价≈Hall"是关联曲线的复现下界(≠机制真实互信息)；"CHSH≈2.80"是曲线振幅换算(非独立Bell测量)；
+    机制真实的I(setting;λ)因高维互信息估计的工具墙而<b>从未被直接测量</b>——这是研究诚实的终点，也是下一站。
+  </div>
+
+  <h2 class="sec" id="refs">参考文献与理论出处 · 按阶段</h2>
+  <div class="refs">
+    <div class="rg">第一阶段 · 问题起源：EPR、贝尔定理与超决定论</div>
+    <ul>
+      <li><span class="kind k-lit">文献</span>A. Einstein, B. Podolsky, N. Rosen, <a href="https://doi.org/10.1103/PhysRev.47.777" target="_blank" rel="noopener"><i>Can Quantum-Mechanical Description of Physical Reality Be Considered Complete?</i></a>, Phys. Rev. 47, 777 (1935). —— EPR 佯谬原始论文。</li>
+      <li><span class="kind k-lit">文献</span>J. S. Bell, <a href="https://doi.org/10.1103/PhysicsPhysiqueFizika.1.195" target="_blank" rel="noopener"><i>On the Einstein Podolsky Rosen Paradox</i></a>, Physics 1, 195 (1964). —— 贝尔不等式原始论文。</li>
+      <li><span class="kind k-lit">文献</span>J. F. Clauser, M. A. Horne, A. Shimony, R. A. Holt (CHSH), <a href="https://doi.org/10.1103/PhysRevLett.23.880" target="_blank" rel="noopener"><i>Proposed Experiment to Test Local Hidden-Variable Theories</i></a>, Phys. Rev. Lett. 23, 880 (1969). —— CHSH 不等式(贝尔不等式的可实验形式)。</li>
+      <li><span class="kind k-lit">文献</span>P. C. W. Davies &amp; J. R. Brown (eds.), <a href="https://www.cambridge.org/9780521457286" target="_blank" rel="noopener"><i>The Ghost in the Atom</i></a>, Cambridge Univ. Press (1986). —— 收录贝尔本人 1985 年访谈，亲述超决定论出路。</li>
+      <li><span class="kind k-con">概念</span>B. S. Tsirelson, 量子关联上界 S ≤ 2√2 ≈ 2.828(Tsirelson 界，1980)。</li>
+      <li><span class="kind k-con">概念</span>测量独立性(measurement independence / 统计独立 / 自由选择假设)——贝尔定理的隐含前提，超决定论放弃的对象。</li>
+    </ul>
+
+    <div class="rg">贯穿全程 · 三大超决定论模型</div>
+    <ul>
+      <li><span class="kind k-lit">文献</span>T. N. Palmer, <a href="https://doi.org/10.1098/rspa.2009.0080" target="_blank" rel="noopener"><i>The Invariant Set Postulate: a new geometric framework for the foundations of quantum theory</i></a>, Proc. R. Soc. A 465, 3165 (2009). —— 不变集理论(★本研究采用)。</li>
+      <li><span class="kind k-lit">文献</span>G. 't Hooft, <a href="https://doi.org/10.1007/978-3-319-41285-6" target="_blank" rel="noopener"><i>The Cellular Automaton Interpretation of Quantum Mechanics</i></a>, Springer (2016). —— 元胞自动机诠释。</li>
+      <li><span class="kind k-lit">文献</span>S. Hossenfelder &amp; T. Palmer, <a href="https://doi.org/10.3389/fphy.2020.00139" target="_blank" rel="noopener"><i>Rethinking Superdeterminism</i></a>, Front. Phys. 8, 139 (2020). —— 一般超决定论框架，并回应『精细调节/阴谋论』指控。</li>
+      <li><span class="kind k-lit">文献</span>C. Wood &amp; R. Spekkens, <a href="https://doi.org/10.1088/1367-2630/17/3/033002" target="_blank" rel="noopener"><i>The lesson of causal discovery algorithms for quantum correlations…</i></a>, New J. Phys. 17, 033002 (2015). —— 『精细调节』批评的代表论述。</li>
+    </ul>
+
+    <div class="rg">第二阶段 · 可微代理与度量工具</div>
+    <ul>
+      <li><span class="kind k-con">概念</span>Koopman 算子 / 转移算子(Perron–Frobenius)谱方法——用线性算子谱求不变测度。</li>
+      <li><span class="kind k-con">概念</span>Lyapunov 指数——刻画轨道收缩/膨胀、判断吸引子与分形维数的基础量。</li>
+      <li><span class="kind k-con">概念</span>凸优化 / 线性规划(经 cvxpy 求解)——求给定关联曲线的最小测量依赖代价 KL 下界。</li>
+      <li><span class="kind k-con">概念</span>arcsine 分布 μ(x)=1/(π√<span class="rad">x(1−x)</span>)——r=4 logistic 映射的解析不变测度，用作校准真值。</li>
+    </ul>
+
+    <div class="rg">第三阶段 · 复现、推广与生成</div>
+    <ul>
+      <li><span class="kind k-lit">文献</span>M. J. W. Hall, <a href="https://doi.org/10.1103/PhysRevLett.105.250404" target="_blank" rel="noopener"><i>Local Deterministic Model of Singlet State Correlations…</i></a>, Phys. Rev. Lett. 105, 250404 (2010) 及 <a href="https://doi.org/10.1103/PhysRevA.84.022102" target="_blank" rel="noopener"><i>Relaxed Bell inequalities…</i></a>, Phys. Rev. A 84, 022102 (2011). —— 单态 −cos 的最小测量依赖下界 0.0663 bit(全项目理论锚点)。</li>
+      <li><span class="kind k-con">概念</span>CGLMP 不等式(高维 qudit)、GHZ 态与 Mermin 不等式(多体)、PR-box(超量子 no-signaling 关联)——第三阶段四方向推广所用的标准情景。</li>
+      <li><span class="kind k-con">概念</span>Bloch 球 + Fibonacci 球面均匀撒点——球面版单态全角度复现的几何构造。</li>
+    </ul>
+
+    <div class="rg">第四·五阶段 · 分形、同源与符号动力学</div>
+    <ul>
+      <li><span class="kind k-con">概念</span>耗散 baker 映射 / Hénon 映射——把吸引子压成测度为零 Cantor 型分形的动力学构造。</li>
+      <li><span class="kind k-con">概念</span>相关维数 D2(Grassberger–Procaccia 估计)——判定吸引子是否为分形的度量。</li>
+      <li><span class="kind k-con">概念</span>符号回归 / 遗传算法(表达式树)——自研，搜索能产生 cos 关联的可读动力学公式。</li>
+      <li><span class="kind k-con">概念</span>PINN(物理信息神经网络)——把物理约束写进损失、用梯度优化反解规则的可微框架。</li>
+    </ul>
+
+    <div class="rg">第六阶段 · 审计与诚实边界</div>
+    <ul>
+      <li><span class="kind k-con">概念</span>no-signaling(不可发信号)条件——量子力学与相对论共同的底线，全程用作作弊红线检验。</li>
+      <li><span class="kind k-con">概念</span>互信息 I(λ; setting) 与 KL 散度——量化测量依赖『代价』的信息论工具；本研究严格区分『关联曲线复现下界』与『机制真实互信息』。</li>
+    </ul>
+
+    <div class="note">说明：标注『<b>文献</b>』者为可查证的正式发表论文/专著，<b>标题即超链接，点击跳转出版商原文</b>(均通过 DOI 解析器核验有效)；标注『<b>概念</b>』者为本研究所用的标准理论、方法或数学对象，属学界通用工具而非某一篇特定论文。</div>
+  </div>
+</div>
+<footer>超决定论研究项目 · 六阶段研究档案 · 2026/07 · 图表由项目脚本生成，内容经全项目代码审计</footer>
+<div id="lb" onclick="this.style.display='none'"><img id="lbimg" src=""></div>
+<div id="gloss"><div class="box"><button class="close" onclick="hideGloss()">×</button><h3 id="glossT"></h3><div id="glossB"></div></div></div>
+<script>
+var GLOSS = {"Bloch球面": "电子自旋可以沿空间中<b>任意方向</b>去测。把『所有可能的方向』收集起来，正好构成一个单位球面——球心指向球面上任一点的箭头，就代表一个方向。这个球面就叫 Bloch 球面(Bloch sphere)。\n\n本研究(Hall 2011 模型)里，三样东西都住在这个球面上：隐变量 λ 是一支箭头，Alice 和 Bob 的测量方向也各是一支箭头。测量结果就是两支箭头点积的正负号：夹角小于90度得 +1，大于90度得 −1。", "Fibonacci撒点": "凸优化处理不了『球面上连续分布的 λ』，必须先把球面换成<b>有限个代表点</b>，问题才变成『N 个点上各放多少概率』这种能算的形式。\n\n怎么撒点才均匀？普通经纬网格会像地球仪的经线一样在两极挤成一团。Fibonacci 撒点(Fibonacci sphere)模仿向日葵种子的排列：每放一个点就旋转一个黄金角(约137.5度)并微微下移，螺旋绕下来，N 个点近似等间距地铺满整个球面。", "Arnold cat map": "【① cat map 是什么】\n环面(torus)上一个极简单的确定性(deterministic)规则：给一个点 (x,y)(取值都在 0 到 1 之间，出界了就绕回来，像老式游戏机屏幕，人物从右边出去会从左边冒出来)，下一步变成：\n\n  x_new = (2x + y) mod 1\n  y_new = (x + y) mod 1\n\n之所以叫『猫图』，是因为 Arnold 当年拿一张猫的照片做这个变换：反复迭代几次后，猫脸被拉伸、折叠，变成看起来完全随机的一团噪声。关键是：这个规则本身是完全确定的——给定 (x,y)，下一步去哪里是唯一确定、没有随机数的；但因为它有『混沌(chaos)』的性质(对初始值极度敏感，差一点点，几步之后就天差地别)，长期看起来就跟真随机没区别。这正好是超决定论想要的东西：确定论 + 看起来随机。\n\n【② 『从同一个初始点 z0 出发演化』具体在干嘛】\n代码里撒了 20 万个初始点 z0=(x0,y0)，均匀铺满整个环面。你可以把这 20 万个点，想象成『20 万个平行的可能宇宙初始条件』——因为这是超决定论，我们讨论的从来不是『单次实验会发生什么』，而是『在所有可能的宇宙初始条件下，统计规律是什么样』。每一个 z0，都严格按 cat map 规则往前演化。\n\n【③ 『第 T 步读出 setting、第 T+K 步读出 λ』是什么意思】\n拿同一个 z0，让它演化 T 步，落到 z_T 这个点，把 z_T 的 x 坐标(缩放到 0~π)记作『setting』——也就是假装这是 Bob 选的测量角度；然后让它继续往下演化 K 步，落到 z_{T+K}，把这个点的 x 坐标(缩放到 0~2π)记作『λ』——也就是隐变量。", "坐标分离": "【和『时间分离』的区别】\n同源生成需要从一条轨迹里『读出』setting 和 λ 两个数，读法有两种：\n\n<b>时间分离</b>(见 Arnold cat map 词条第③层)：拿同一个初始点 z0，先演化 T 步读一次(当 setting)，再继续演化 K 步读第二次(当 λ)——两个数来自<b>同一时刻的同一坐标</b>，只是读的<b>时间点不同</b>。\n\n<b>坐标分离</b>：拿同一个演化出来的点 z=(x,y)，<b>同一时刻</b>直接把 x 坐标记作 setting、y 坐标记作 λ——两个数来自<b>同一时刻</b>，只是读的<b>坐标分量不同</b>。相关性不再来自『前后两个时刻之间的动力学传递』，而是来自『x 和 y 这两个坐标在演化规则里本来就相互耦合』(比如 cat map 的 x_new 里就带着 y)。\n\n【为什么要试这个】两种读法都满足『同源』的要求(setting 和 λ 都是同一条轨迹的产物，规则本身不显式吃 setting)，但背后依赖的物理机制不同(时间上的记忆 vs 空间上的耦合)。实测下来，两种读法测出的代价都稳健地卡在约 Hall 2 倍附近，坐标分离数值上略优，因此后续升维就沿用了坐标分离。", "Hénon映射": "一种经典的耗散混沌系统(dissipative chaotic map)，1976年由法国天文学家 Michel Hénon 提出，最初是为了研究天体轨道的混沌行为而设计的简化模型。\n\n公式：x_new = 1 − a·x² + y，y_new = b·x(标准参数 a=1.4, b=0.3)。\n\n特点：它是<b>耗散的</b>(dissipative)——每次迭代都会让面积收缩，因此长期轨迹会收缩到一个测度为零的分形吸引子(Hénon吸引子)上，是历史上最早、最有名的『奇异吸引子』例子之一。\n\n【为什么在本研究里翻车】公式里的 x² 是<b>无界</b>的二次项——只要 x 稍微跑出正常范围，下一步 x² 就会指数级放大，几步之内就能把 x 推到几万这个量级。单独跑 Hénon 映射(不训练)时这个问题不明显，但一旦把它塞进梯度训练循环、让 PINN 在上面加扰动，训练早期不稳定的参数很容易一脚把 x 踢出安全区，从此万劫不复——数值发散，训练失败。", "baker映射": "一种经典的混沌系统，因为它的构造像揉面团(bake)——把面团拉长、切开、叠起来反复操作——而得名。\n\n【标准版】在单位方块内，把 x 坐标『倍增拉伸』(乘2，超过1就折回来，等价于 mod 1)，同时把方块沿中线切成两半重新堆叠——这个『拉伸+切叠』的组合，正是揉面团的数学版本。\n\n【本研究用的耗散版】不是简单折叠，而是让 y(3D 情形下还有 z)坐标根据 x 落在左半还是右半，被压缩进一条窄带、中间留白——留白反复嵌套就形成 Cantor 集(测度为零的分形结构)。\n\n【和 Hénon 的关键区别】baker 映射的每一步操作都严格限制在单位方块 [0,1]ⁿ 内(取模、压缩，不存在无界的二次项)，天然不会数值发散，这正是它被用来接替 Hénon 的原因。", "贝尔不等式": "贝尔不等式(Bell inequality, 1964)是局域隐变量理论必须满足的关联上限。其最常用的可实验形式是 CHSH 不等式：\n\n  S = | E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′) | ≤ 2\n\n其中 a、a′ 是 Alice 的两种测量方向，b、b′ 是 Bob 的两种测量方向。\n\n【E 是什么】\nE(a,b) 叫『关联值』：Alice 用方向 a、Bob 用方向 b 各测很多次，每次两人结果都是 +1 或 −1，把每次两个结果<b>相乘</b>再取平均，就得到 E(a,b)。\n· E = +1：两边结果总是一致(都+1或都−1)，完全正关联；\n· E = −1：两边结果总是相反，完全负关联；\n· E = 0：两边毫无关联(一半同一半异)。\n所以 E 衡量『两地测量结果有多同步』，取值在 −1 到 +1 之间。\n\n任何满足『局域性 + 实在性 + 测量独立性』的理论，都必然 S ≤ 2；而量子力学预言 S 可达 2√2≈2.828(Tsirelson 界)。\n所以：只要实验测得 S > 2，就证明这三条前提至少有一条错——这就是贝尔不等式的威力，把哲学争论变成可判定的实验。", "CHSH": "CHSH 是贝尔不等式最实用的一个版本，取自四位作者 Clauser–Horne–Shimony–Holt(1969)姓氏首字母。\n\n做法：Alice 和 Bob 各自随机选两种测量方向之一(Alice: a 或 a′；Bob: b 或 b′)，各自得到 ±1 的结果。\n对四种设置组合分别统计关联 E，组合成一个量 S = |E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′)|。\n\n· 经典(局域隐变量)：S ≤ 2\n· 量子(Tsirelson 界)：S ≤ 2√2 ≈ 2.828\n\n本研究全程用 CHSH 的 S 值作为'是否超越经典/是否作弊'的物理标尺；标准最优角度为 (0°,90°,45°,-45°)。", "完整复现单态量子关联": "『单态』(singlet)是最常用的最大纠缠态。用它做 Bell 实验时，两边测量方向夹角为 θ，两个结果乘积的平均(关联)为：\n\n  E(θ) = −cos(θ)\n\n这条曲线是量子力学的精确预言：夹角 0° 时完全反关联(−1)，90° 时无关联(0)，180° 时完全正关联(+1)。\n\n『完整复现』= 不只在某几个角度对得上，而是在<b>所有夹角 θ</b>上都精确重现整条 −cos(θ) 曲线。\n这比只凑出一个高 CHSH 值(4个角度)严格得多——很多作弊模型能凑出某几点，却做不出整条曲线。\nHall(2011)正是针对『完整复现整条 −cos』证明了：所需测量依赖互信息 I(λ;设置) ≥ 0.0663 bit。", "PINN": "PINN(Physics-Informed Neural Network，物理信息神经网络)是一类把『物理规律』直接写进损失函数的神经网络。\n\n普通神经网络靠大量数据拟合；PINN 则要求网络的输出同时满足给定的方程/约束(如微分方程残差为零)——即把'必须遵守的物理'变成一项损失，用梯度下降去逼近。\n\n【和其他方法比，为什么本研究选 PINN】\n· 相比『纯数据拟合(普通神经网络)』：拟合只会记住给定的数据点，学不到背后的规则；本研究要的是『反解出一条动力学规则/不变集』，PINN 把约束写进损失，天生擅长带约束反解规则。\n· 相比『手工解析/符号推导』：解析方法要求人先猜出方程形式，面对分形这种没有闭式表达的对象基本无从下手；PINN 不需要预先知道公式，让规则在优化中自我涌现。\n· 相比『蒙特卡洛/直接采样』：采样只能验证一个给定模型的统计量，无法反向优化模型本身；PINN 全程可微，可用梯度把模型往目标推。\n· 相比『符号回归(遗传算法)』：符号回归能给出可读公式但搜索是离散、不可微的、慢；PINN 连续可微、优化高效——两者本研究都用，互为补充(见第五阶段)。\n\n【优势小结】\n带约束反解规则、全程可微(对上四硬性质里的『可微』)、约束(no-signaling、产生 cos、守住分形)可直接写成损失项。\n\n【劣势/局限】\n① PINN 需要可微，而真正的分形不变集处处不可微——这正是第四/五阶段要正面破解的核心死结；\n② 解是数值的、黑箱的，不像符号回归给出可读公式；\n③ 训练可能陷入局部极小、对损失权重敏感。", "no-signaling": "no-signaling(『不可发信号』条件)是量子力学和相对论都必须遵守的一条底线：Alice 单方改变自己的测量方向，<b>不能</b>让 Bob 那边的测量统计发生任何变化——否则两人就能借此瞬间传递信息，违反相对论(信息不能超光速)。\n\n用公式说：Bob 的测量结果概率分布，与 Alice 选了什么方向无关(反之亦然)。\n\n【为什么本研究特别在意它】\n超决定论允许 λ 与设置相关，很容易'用力过猛'——如果模型让一方的设置偷偷影响了另一方的结果统计，那就成了可发信号的作弊(能超光速通信)，物理上不允许。所以全研究反复用 no-signaling 检验来卡住这条红线：关联可以强(甚至超经典)，但绝不能可发信号。", "不变集理论": "不变集理论(Invariant Set Theory)是英国物理学家 Tim Palmer 提出的一种超决定论进路，把量子力学的奇异性归因于宇宙演化被约束在态空间中一个特殊的几何对象上。\n\n【核心图像】\n设想整个宇宙的所有可能状态构成一个高维『态空间』。Palmer 主张：真实宇宙的历史并不能取遍这个空间里的任意一点，而是永远落在其中一个『不变集』I_U 上。这个 I_U 有三条关键性质，下面逐一讲清：\n\n▍性质一 · 什么是『不变集』(以及吸引子)\n把宇宙的演化想成一个映射：当前态 → 下一刻的态。如果一个集合里的任何一点，经过演化后仍然落在这个集合里、永不跑出去，就称它为这个动力学的『不变集』。\n『吸引子』是不变集里最重要的一类：从它附近出发的轨道，会随时间被不断吸拢、最终贴到这个集合上。就像把一杯水搅动后静置，水流的长期行为总会收束到某些固定的花样上——那些花样就是吸引子。\n宇宙落在不变集 I_U 上，意思就是：宇宙的历史是这套动力学的吸引子，它自动、稳定地停留在 I_U 上，不需要谁去精细调节。\n\n▍性质二 · 什么是『测度为零』\n『测度』可以理解为『体积/占比』。测度为零，意思是这个集合在整个态空间里占的『体积』是 0——就像三维空间里的一张纸(二维面)，体积为零；或一条线在平面里，面积为零。\n推论很反直觉但很关键：如果你在整个态空间里『随手』指定一个态，它几乎必然不在 I_U 上(落在一个零体积集合上的概率是 0)。\n这正是超决定论绕过贝尔的要害——绝大多数『你以为可以自由选择的测量设置』所对应的宇宙态，根本不在 I_U 上，是物理上不可能发生的。\n\n▍性质三 · 什么是『分形』\n分形是一种『自相似、无穷精细』的几何结构：无论放大多少倍，都能看到与整体相似的结构，永远看不到光滑的边(想想海岸线、雪花、菜花)。\n分形的『维数』通常不是整数，比如 1.26 维、2.7 维——它比一条线『胖』，又比一个面『瘦』。\nPalmer 要求 I_U 是分形，是因为只有分形这种『measure-zero 却又无穷复杂』的结构，才能既占零体积(性质二)、又装得下宇宙一切可能历史的丰富性。\n但分形有个致命特点：它处处不光滑、处处不可微——这与需要可微才能优化的 PINN 直接冲突，构成全研究最硬的死结(见下)。\n\n【它如何『绕过』贝尔定理】\n贝尔定理的证明默认了『测量设置可以自由independent地选取』(即测量独立性：λ 与设置无关)。在不变集理论里，测量设置和被测粒子同属这条被约束的宇宙轨迹、都被 I_U 约束——两者源自同一个几何对象，因此 λ 与设置<b>天然相关、并不独立</b>。这直接违反了测量独立性这条前提。前提一旦被抽掉，贝尔不等式的推导就不成立，量子关联可以超过经典界而不需要超距作用。\n\n【它怎么回应『精细调节/阴谋论』指控】\n超决定论最常挨的批评是：要让隐变量与测量设置的相关恰好复现量子预言，初始条件像是被『精细调节』到阴谋的程度(Wood &amp; Spekkens, 2015)。Palmer 的回答是几何化的：这种相关<b>不是被谁调出来的</b>，而是『宇宙态本就落在分形不变集 I_U 上』这一几何约束的自动结果。I_U 是动力学的吸引子(性质一)——系统会自发收束到它，无需外部精调；相关是这个吸引子结构的内禀属性，而非对初始条件的刻意安排。这正是本研究看重 Palmer 版本的原因之一：它把『阴谋』替换成了一个可研究的几何对象。\n\n【为什么本研究选它】\n三大超决定论进路中，Palmer 的版本给出了最具体、最可计算的几何对象：一个分形不变集。这让『超决定论』从哲学口号变成可建模的数学目标——本研究据此把它拆成四条可检验的硬性质(高维 / 分形·测度为零 / 内禀产生 cos / 可微)，并尝试用可微代理去逼近这样一个不变集。\n\n【关键张力】\n不变集是分形、处处不可微，而 PINN 只能优化可微对象——这对『分形 vs 可微』的矛盾正是全研究最硬的死结(第五阶段破解)。\n\n代表文献：T.N. Palmer, 《The Invariant Set Postulate》(2009) 及后续系列工作。", "精细调节": "精细调节(Fine-tuning)在这里指对超决定论最主要的一条批评：为了让理论复现量子力学的预言，某些参数或初始条件必须被『恰到好处地设定』，否则结果就对不上——这种『不多不少刚刚好』被认为太不自然、太刻意(ad hoc，拉丁文『为此专门而设』，指不是理论自然推出、而是临时为凑答案打的补丁)。\n\n【批评具体说什么】\n超决定论允许隐变量 λ 与测量设置相关。批评者(Wood &amp; Spekkens, 2015 是代表)指出：\n要让『λ 与设置的相关』<b>恰好</b>在每一种实验、每一个角度下都复现量子预言(不多不少)，宇宙的初始条件就得被精调到近乎<b>阴谋</b>的程度——仿佛宇宙从一开始就『串通好』要在所有贝尔实验里骗过我们。这被戏称为超决定论的『阴谋论』难题。\n\n【为什么这是硬指控】\n一个理论如果要靠『把旋钮拧到某个精确值』才能对，通常被认为解释力弱：它没有说明『为什么是这个值』，只是把答案硬塞了进去。精细调节越多，理论越像『事后凑』，越不可信。\n\n【Palmer 不变集理论怎么回应】\n它主张这种相关<b>不是被谁『调』出来的</b>，而是几何约束的自动结果：宇宙态本就落在一个分形不变集 I_U 上，而 I_U 是动力学的吸引子——系统会自发收束到它，无需任何人去精调初始条件。相关是这个吸引子结构的内禀属性。于是『阴谋』被替换成一个可研究、可计算的几何对象。Hossenfelder &amp; Palmer (2020) 曾专门撰文从这个角度回应精细调节指控。", "梯度下降": "一句话：把损失 L 想象成一片山地(高度=L，位置=参数 θ)，梯度下降就是<b>顺着最陡的下坡，一步步走到谷底</b>。\n\n<b>梯度</b>：损失对所有参数的偏导数拼成的向量，指向『L 上升最快的方向』；反方向就是『下降最快的方向』。\n<b>求梯度</b>：在当前参数上把这个向量算出来(神经网络里由『反向传播』自动完成)。\n<b>迭代</b>：θ ← θ − η·∇L(η 是步长)，往负梯度挪一小步，L 就降一点；反复迭代逼近最小值。\n\n<b>关键前提</b>：求梯度要求 L 对 θ <b>可微</b>——不可微就没有梯度，这套机器转不起来。这正是分形(处处不可微)与 PINN 冲突的根源。", "测量依赖": "放弃测量独立性的程度。", "Kaplan–Yorke维数": "由 Lyapunov 谱估算出的分形维数。把 λ 从大到小累加，在『累计和刚好由正转负』处插值，得到一个通常为非整数的维数——非整数即分形。", "互信息": "互信息(mutual information, 记作 I)是信息论里衡量『两个量彼此关联多强』的标准量，单位是 bit。\n\n它的含义是：<b>知道其中一个量，能替另一个量消除多少不确定性</b>。\n· I = 0：两者完全独立，知道一个对另一个毫无帮助；\n· I 越大：两者越相关，知道一个就能越多地预测另一个。\n\n【在本研究里的角色】\n超决定论允许隐变量 λ 与测量设置相关。这种相关的强度，正是用互信息 I(λ;设置) 来精确量化的——它就是超决定论的『作弊燃料』：I 越大，说明 λ 越『知道』将要测什么、模型越依赖测量依赖。理想的测量独立对应 I=0；Hall 证明『完整复现单态』至少需要 I ≥ 0.0663 bit，这成为全研究的理论标尺。", "一致性残差": "方法① · 用零水平集把集合变成可微函数。\n\n<b>怎么『可微地』表示一个集合？</b>\n不直接画出集合的形状，而是用一个可微函数 g_θ(x)(θ 是神经网络参数)去表示它，约定：<b>g_θ(x)=0 的那些点就是集合；g_θ(x)≠0 的点在集合外</b>。这叫『零水平集』表示——集合被编码成一个函数的零点，而函数本身处处可微。\n\n<b>残差从哪来？</b>\n『不变集』的定义是：集合里的点 x，经动力学 f 演化一步后 f(x) 仍在集合里。翻译过来——若 x 在集合上(g_θ(x)=0)，则 f(x) 也必须在集合上(g_θ(f(x))=0)。把这个『应当为零、实际未必为零』的量拿出来就是残差：\n    r(x) = g_θ(f(x)) − g_θ(x)\n它度量一个点演化前后『在不在同一个水平集上』的偏离。集合真是不变集时，对集合上每个点这个差恒为 0。\n\n<b>为什么用它当损失？</b>\n因为它把『是不是不变集』这个几何判断，变成了一个可求值、可求导、且理想值为零的数。在采样点上取平均平方得到损失：\n    L(θ) = (1/N) Σ_i [ g_θ(f(x_i)) − g_θ(x_i) ]²\nL=0 当且仅当所有采样点都满足不变条件——最小化 L 就等价于把 g_θ 的零水平集逼成真正的不变集；g_θ、f 都可微，L 对 θ 可求梯度，可直接梯度下降。\n\n<b>困难：容易出现平凡解。</b>\n作损失训练时，网络会退化成恒等映射 f(x)=x —— loss=0 却毫无意义(『分布不变』约束太弱)。实践中要加正则项(如约束 g 的梯度范数)排除这类平凡解。正是方法①这个失败，催生了后面②③④用不同约束绕开平凡解。", "Lyapunov指数": "方法② · 用轨道的收缩/膨胀率刻画吸引子的形状与维度。\n\n<b>Lyapunov 指数在测什么？</b>\n取相邻极近的两条轨道，看它们随时间被拉开还是压拢。若初始间距 δ0 经 n 步后变成 δn，且大致按指数变化 δn ≈ δ0·e^(λn)，那个指数率 λ 就是 Lyapunov 指数：\n    λ = lim (1/n) · ln( |δn| / |δ0| )\nλ>0：指数级分开(膨胀，混沌标志)；λ<0：指数级靠拢(收缩)；λ=0：不胀不缩。\n\n<b>为什么一个方向一个 λ？</b>\n高维系统里同一点沿不同方向拉伸率不同，每个维度各有一个 λ，合称 Lyapunov 谱 λ1≥λ2≥…≥λd。吸引子通常某些方向收缩(λ<0，厚度趋于零)、某些方向膨胀或持平(λ≥0，沿集合铺展)——这套正负号组合刻画出吸引子的形状。\n\n<b>怎么判定是不是『测度为零的分形』？(方向→体积→维数)</b>\n① 方向：λ>0 方向有延展有厚度，λ<0 方向被压扁到几乎没厚度——描出形状。\n② 体积：所有 λ 之和 Σλi<0 → 体积每步都缩 → 迭代后点云体积趋于零，这就是『测度为零』的来源，也是耗散系统造分形的机制。\n③ 维数：由 Lyapunov 谱算出 Kaplan–Yorke 维数，通常是非整数(如 2.3 维)——非整数维就是分形的标志。", "不变测度方法": "方法③ · 不描形状，改学『系统长期停留的概率密度』。\n\n<b>换个思路。</b>前两条路刻画集合长什么样；这一条反过来，只问『系统长期在各处停留的概率有多大』——在相空间每个位置放一个概率密度 μ(x)，它就是不变测度。轨道停留越久处 μ 越高。\n\n<b>μ 要满足什么条件？</b>\n『不变』即：把当前分布 μ 按 f 演化一步，得到的还是 μ 自己。写成算子形式就是转移算子(Perron–Frobenius 算子)P 的不动点：\n    P μ = μ\n直觉：概率质量被 f 不断搬运，当达到平衡、整体分布不再变化，那个平衡分布就是 μ。", "Koopman方法": "方法④ · 把非线性动力学变成线性算子，从谱求测度。\n\n<b>核心技巧：用无穷维线性换掉有限维非线性。</b>\n动力学 f 通常非线性、难分析。Koopman 不盯状态点 x 怎么动，而盯所有可观测函数 g(x) 怎么被搬动——定义算子 (𝒦g)(x)=g(f(x))，即把观测函数沿动力学往前推一步。\n\n<b>为什么更好算？</b>\n关键性质：𝒦 是线性算子——即使 f 高度非线性，𝒦 在函数空间上是线性的(代价是无穷维)。线性就能谈谱：𝒦φ=μ·φ，主特征向量对应不变测度，其余特征值给出衰减率/振荡频率。(𝒦 与③的转移算子 P 互为伴随，一个搬观测、一个搬分布。)\n\n<b>优点与代价</b>\n优点：不需要可微规则，直接从谱算出奇异/分形测度，适合难求导的情形。\n代价：谱方法对离散化、截断敏感，易给出看似合理却未经验证的结果——本研究在此主动撤回了未经验证的数据，宁可留白也不报没校准的数(见方法论铁律)。", "凸优化代价LP": "一把『代价标尺/裁判』。它回答一个问题：要复现某条给定的关联曲线，一个满足 no-signaling 的超决定论模型『至少』要付出多少测量依赖代价？\n\n<b>输入是什么？</b>\n只有一样东西——一条<b>目标关联曲线</b>(比如 CHSH 的一个 S 值，或整条 E(θ) 曲线)。注意：<b>输入不是你的模型</b>，只是『你想复现的那条曲线长什么样』。\n\n<b>输出是什么？</b>\n一个数：复现这条曲线所需的<b>最小</b>测量依赖互信息 I(λ;设置)。这个最小值是在『所有可能的模型』里取的——也就是这条曲线的<b>理论下界</b>：任何模型都不可能比它更省。\n\n<b>怎么算的？(为什么保证是真下界)</b>\n决策变量 Q[设置, 策略] 遍历所有合法概率分布；目标『互信息 I』对 Q 是凸函数，约束全是线性的：\n· 归一：每个设置下策略分布之和=1；\n· 达标：组合出的 CHSH S = 目标值；\n· no-signaling：一方改设置不改变另一方的边缘统计(结构强制，全程=0)；\n凸目标 + 线性约束 = 凸优化 → 求解器(cvxpy)保证找到<b>全局最小</b>，所以输出是硬下界，不是某个局部解。求完还用 numpy 独立复算 S、no-signaling、I 一遍(不信优化器自报)。", "CHSH读数器": "一个专门防止误读的『测谎仪』函数。给定一批测量数据 (λ, Alice 结果, Bob 结果)，它同时算出两个量：\n\n<b>① S 值</b>：由四个关联组合而成 S = E(a,b) + E(a,b') + E(a',b) − E(a',b')，其中每个 E = 两人结果乘积的平均。S 衡量关联强度(经典 ≤2，量子 ≤2√2≈2.828)。\n\n<b>② no-signaling 违反量</b>：检查 Alice 的边缘统计 ⟨A⟩ 会不会随 Bob 的设置变化(反之亦然)。=0 表示不可发信号，越大越违反。\n\n<b>为什么需要它？</b>\n历史上踩过角度 bug：某些角度组合(如把 Alice 锁死、或选错四角)会让读数<b>误给 S=0 或让经典模型也复现</b>，看似成功实则测错。读数器把这些误读堵死，并遵守『先校准』——先用量子标准答案验证(最优角度应给 S≈2.828 且 no-signaling≈0)、经典数据应给 |S|≤2，校准通过才用。", "方法论铁律": "贯穿全项目的『作弊防线』——一套防止『度量失效(看似成功实则测错)』的纪律。四条核心：\n\n<b>① 先校准</b>：任何新工具，先在有标准答案的题上验证它不出错，才拿去做没答案的题。\n<b>② 多 seed</b>：多个随机数重复跑，避免被单次幸运结果骗到。\n<b>③ 不在单次运行下结论</b>：任何结论都要多次、多角度复算(常用 numpy 独立复算，不信优化器/训练器自报的数)。\n<b>④ 负结果也算成果</b>：方法失败、被证伪同样有价值，如实记录、主动撤回未验证数据，绝不掩盖。\n\n正是这套纪律，让后面全过程 11 次『度量失效』都能被<b>当场抓获</b>并诚实降级，而不是带着错误结论一路前进。它是本研究一切数字可信的根本保证。"};
+function showGloss(k){
+  document.getElementById('glossT').textContent = k;
+  document.getElementById('glossB').innerHTML = (GLOSS[k]||'').replace(/\n/g,'<br>');
+  document.getElementById('gloss').style.display='block';
+}
+function hideGloss(){ document.getElementById('gloss').style.display='none'; }
+document.getElementById('gloss').addEventListener('click',function(e){ if(e.target===this) hideGloss(); });
+function toggleStage(h){ h.parentElement.classList.toggle('collapsed'); if(typeof layoutMasonry==='function') setTimeout(layoutMasonry,0); }
+function toggleDetail(h){ h.parentElement.classList.toggle('collapsed'); if(typeof layoutMasonry==='function') setTimeout(layoutMasonry,0); }
+function foldAll(v){ document.querySelectorAll('.stage').forEach(function(s){ s.classList.toggle('collapsed', v); }); if(typeof layoutMasonry==='function') setTimeout(layoutMasonry,0); }
+// 导航点击: 自动展开目标阶段
+document.querySelectorAll('nav a').forEach(function(a){
+  a.addEventListener('click',function(){
+    var id=this.getAttribute('href'); if(id&&id[0]=='#'){ var el=document.querySelector(id); if(el) el.classList.remove('collapsed'); }
+  });
+});
+document.querySelectorAll('.step img').forEach(function(im){
+  im.addEventListener('click',function(e){e.stopPropagation();
+    document.getElementById('lbimg').src=this.src;document.getElementById('lb').style.display='block';});
+});
+// ---- 瀑布流 masonry: 宽屏两列(最短列优先), 窄屏单列按顺序 ----
+function stepsOrder(box){
+  if(!box._items) box._items = Array.prototype.slice.call(box.querySelectorAll('.step'));
+  return box._items;
+}
+function layoutMasonry(){
+  var wide = window.innerWidth >= 760;
+  document.querySelectorAll('.steps').forEach(function(box){
+    var items = stepsOrder(box);
+    if(box.offsetParent === null) return;          // 收起的阶段先跳过, 展开时再排
+    // 清空
+    box.classList.remove('msn');
+    box.querySelectorAll('.mcol').forEach(function(c){ c.remove(); });
+    if(!wide){                                     // 单列: 按原顺序放回
+      items.forEach(function(it){ box.appendChild(it); });
+      return;
+    }
+    box.classList.add('msn');                       // 两列: 最短列优先
+    var a=document.createElement('div'), b=document.createElement('div');
+    a.className='mcol'; b.className='mcol';
+    box.appendChild(a); box.appendChild(b);
+    items.forEach(function(it){
+      (a.offsetHeight <= b.offsetHeight ? a : b).appendChild(it);
+    });
+  });
+}
+var _mt;
+window.addEventListener('resize',function(){ clearTimeout(_mt); _mt=setTimeout(layoutMasonry,120); });
+window.addEventListener('load', layoutMasonry);
+document.querySelectorAll('.step img').forEach(function(im){
+  im.addEventListener('load', function(){ clearTimeout(_mt); _mt=setTimeout(layoutMasonry,60); });
+});
+layoutMasonry();
+</script>
+</body></html>
