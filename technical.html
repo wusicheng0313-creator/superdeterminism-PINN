@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Superdeterminism × PINN · Technical Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a research archive. Narrow reading column, stage headers as numbered "logbook" bands, figures break slightly wider. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#131b26; --muted:#556072; --rule:#d9dde5;
+  --accent:#2b4db3; --accent-soft:#e6ebf8;
+  --ok:#2d7a4c; --ok-soft:#e5f2ea;
+  --warn:#9a5a08; --warn-soft:#fbf0de;
+  --shade:rgba(19,27,38,.55);
+  --f-display:"Instrument Serif", "Times New Roman", Georgia, serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e131a; --surface:#161d27; --ink:#e4e8ef; --muted:#9aa5b6; --rule:#2a3442;
+    --accent:#8ea8ff; --accent-soft:#1d2842;
+    --ok:#7fcf9e; --ok-soft:#16291f;
+    --warn:#f0b35c; --warn-soft:#2e2413;
+    --shade:rgba(0,0,0,.7); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e131a; --surface:#161d27; --ink:#e4e8ef; --muted:#9aa5b6; --rule:#2a3442;
+  --accent:#8ea8ff; --accent-soft:#1d2842;
+  --ok:#7fcf9e; --ok-soft:#16291f;
+  --warn:#f0b35c; --warn-soft:#2e2413;
+  --shade:rgba(0,0,0,.7); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:860px;margin:0 auto}
+p{margin:0}
+b,strong{font-weight:600}
+a{color:var(--accent)}
+.mono{font-family:var(--f-mono);font-size:.92em}
+
+/* Hero */
+header.hero{max-width:860px;margin:0 auto;padding-block:56px 32px;display:grid;gap:14px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(2.6rem,7vw,4.6rem);line-height:1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 i{color:var(--accent)}
+.lede{font-size:1.15rem;max-width:62ch;color:var(--ink)}
+.audit{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.audit span::before{content:"✓ ";color:var(--ok)}
+
+/* Nav */
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--rule);margin-inline:-16px;padding-inline:16px}
+nav.toc .in{max-width:860px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:thin}
+nav.toc a,nav.toc button{flex:none;font-family:var(--f-mono);font-size:12.5px;padding:5px 10px;border-radius:4px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);text-decoration:none;cursor:pointer}
+nav.toc a:hover,nav.toc button:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc .sp{flex:1 0 8px}
+
+h2{font-family:var(--f-display);font-weight:400;font-size:2.1rem;line-height:1.15;margin:0;text-wrap:balance}
+h3{font-size:1.08rem;font-weight:600;margin:0;line-height:1.35;text-wrap:balance}
+.block{display:grid;gap:14px;margin-top:48px}
+.prose{display:grid;gap:12px;max-width:68ch}
+
+figure{margin:0;display:grid;gap:8px}
+figure img{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:4px;background:#fff;cursor:zoom-in}
+figcaption{font-size:.9rem;color:var(--muted);display:grid;gap:6px}
+figcaption b{color:var(--ink)}
+
+/* Stages */
+details.stage{margin-top:40px;border-top:2px solid var(--ink)}
+details.stage>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:4px 16px;align-items:baseline;padding-block:14px 16px}
+details.stage>summary::-webkit-details-marker{display:none}
+.snum{font-family:var(--f-display);font-size:3rem;line-height:.9;color:var(--accent);grid-row:span 2}
+.stitle{font-family:var(--f-display);font-size:1.9rem;line-height:1.1}
+.ssub{grid-column:2;color:var(--muted);font-size:.95rem}
+.chev{font-family:var(--f-mono);color:var(--muted);grid-row:1;grid-column:3;transition:transform .2s}
+details.stage[open] .chev{transform:rotate(90deg)}
+.sbody{display:grid;gap:22px;padding-bottom:12px}
+
+.step{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px;display:grid;gap:14px;min-width:0}
+.step-h{display:flex;gap:12px;align-items:baseline}
+.step-h .n{font-family:var(--f-mono);font-size:12px;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:1px 6px;flex:none}
+.lab{display:grid;gap:4px}
+.lab>.k{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lab.res>.k{color:var(--ok)}
+.lab.bnd{background:var(--warn-soft);border-radius:4px;padding:10px 12px}
+.lab.bnd>.k{color:var(--warn)}
+.summary{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 4px 4px 0}
+.summary .k{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:2px}
+ul.clean{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.formula{font-family:var(--f-mono);font-size:.9rem;background:var(--bg);border:1px solid var(--rule);border-radius:4px;padding:10px 12px;overflow-x:auto;white-space:pre}
+
+details.sub{border:1px solid var(--rule);border-radius:4px;background:var(--bg)}
+.step details.sub{background:var(--bg)}
+details.sub>summary{cursor:pointer;padding:10px 14px;font-weight:500;font-size:.95rem;list-style:none;display:flex;gap:8px}
+details.sub>summary::-webkit-details-marker{display:none}
+details.sub>summary::before{content:"▸";color:var(--accent);transition:transform .15s;display:inline-block}
+details.sub[open]>summary::before{transform:rotate(90deg)}
+details.sub>.in{padding:0 14px 14px;display:grid;gap:12px}
+details.sub details.sub{background:var(--surface)}
+
+.term{font:inherit;color:var(--accent);background:none;border:0;border-bottom:1px dotted var(--accent);padding:0;cursor:help}
+.term::after{content:" ⓘ";font-size:.8em}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:8px}
+.pill{font-family:var(--f-mono);font-size:12px;border:1px solid var(--rule);border-radius:999px;padding:2px 10px;background:var(--surface)}
+.pill.pick{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* Board */
+.board{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.board>div{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:18px;display:grid;gap:8px;align-content:start;min-width:0}
+.board>div.b{background:var(--warn-soft);border-color:transparent}
+.board .k{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ok)}
+.board .b .k{color:var(--warn)}
+
+/* Refs */
+.refs h3{margin-top:18px;font-size:1rem}
+.refs ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:8px}
+.refs li{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:.93rem}
+.refs .tag{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding-top:3px}
+.refs .tag.lit{color:var(--accent)}
+footer{max-width:860px;margin:56px auto 0;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+/* Dialogs */
+dialog{border:1px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--ink);padding:0;max-width:min(680px,calc(100vw - 32px));width:100%;max-height:85vh}
+dialog::backdrop{background:var(--shade)}
+.dlg-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--surface)}
+.dlg-h h3{font-family:var(--f-display);font-weight:400;font-size:1.6rem}
+.dlg-b{padding:16px 18px 22px;display:grid;gap:10px;font-size:.95rem}
+.dlg-b pre{font-family:var(--f-mono);font-size:.88rem;background:var(--bg);padding:8px 10px;border-radius:4px;overflow-x:auto;margin:0}
+.x{font:inherit;font-size:20px;line-height:1;background:none;border:1px solid var(--rule);color:var(--ink);border-radius:4px;width:34px;height:34px;cursor:pointer}
+dialog.lb{max-width:min(1200px,calc(100vw - 24px));background:var(--surface)}
+dialog.lb img{display:block;width:100%;height:auto;background:#fff}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:560px){
+  .step{padding:16px}
+  .snum{font-size:2.3rem}
+  .stitle{font-size:1.5rem}
+  .refs li{grid-template-columns:1fr;gap:2px}
+}
+</style>
+</head>
+<body>
+<div style="max-width:860px;margin:0 auto;padding:14px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px"><a href="index.html" style="color:var(--accent);text-decoration:none">← Back to the project overview</a> <span style="color:var(--muted)">·</span> <a href="zh.html" lang="zh" style="color:var(--accent);text-decoration:none">中文版</a></div>
+
+
+<header class="hero">
+  <div class="eyebrow">Research archive · Coralyn Wu · 2026</div>
+  <h1>Superdeterminism <i>×</i> PINN</h1>
+  <div class="eyebrow" style="letter-spacing:.08em">The Black Box of Superdeterminism</div>
+  <p class="lede">Attacking “the rule that fits the universe” with a <b>differentiable invariant-set surrogate</b>: from the crack in Bell’s theorem to quantum correlations emerging end-to-end on a measure-zero fractal attractor.</p>
+  <p class="prose" style="color:var(--muted)">Every conclusion was audited against 120 files and 18,040 lines of code and honestly downgraded where needed. The work strictly separates the <i>lower bound for reproducing a correlation curve</i> from the <i>true mutual information of a mechanism</i>.</p>
+  <div class="audit"><span>Organized by research stage</span><span>Audited</span><span>No cheating</span><span>No false conclusions admitted</span></div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <div class="in">
+    <a href="#s1">Stage 1</a><a href="#s2">Stage 2</a><a href="#s3">Stage 3</a><a href="#s4">Stage 4</a><a href="#s5">Stage 5</a><a href="#s6">Stage 6</a>
+    <a href="#board">Boundaries</a><a href="#refs">References</a>
+    <span class="sp"></span>
+    <button type="button" id="expandAll">Expand all</button><button type="button" id="collapseAll">Collapse all</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section class="block">
+  <figure>
+    <img src="img/framework-mindmap.png" alt="Mind map of the research framework across six stages" loading="lazy">
+    <figcaption>Framework overview: the six stages. Use the navigation bar or follow the branches in the map.</figcaption>
+  </figure>
+</section>
+
+<section class="block" id="overview">
+  <h2>The research idea in one page</h2>
+  <div class="prose">
+    <p>Bell’s theorem says that if you want to keep both determinism and locality, the only thing left to give up is <i>measurement independence</i>. That choice is superdeterminism. Giving it up requires the hidden variable λ to “peek” at the measurement settings, and the price is a mutual information I(λ; setting).</p>
+    <p>The main line of this work is to <b>turn that philosophical claim into a computable engineering problem</b>. Without signaling and without cheating, can we build a dynamical rule that satisfies four hard properties (high-dimensional, a fractal of measure zero, intrinsic cos, differentiable) and from which the quantum correlation −cos(θ) <b>emerges on its own</b> instead of being planted by hand?</p>
+    <p>The six stages are: define the problem (1); build differentiable tools and measurement discipline (2); reproduce and extend known results (3); confront the hardest property, the measure-zero fractal (4); use symbolic regression to find readable formulas and make every component emerge end-to-end (5); and a rigorous audit with honest downgrades throughout (6).</p>
+  </div>
+</section>
+
+<!-- ================= STAGE 1 ================= -->
+<details class="stage" id="s1" open>
+<summary><span class="snum">1</span><span class="stitle">Problem and goal</span><span class="chev">▸</span><span class="ssub">Why this research, and what it sets out to crack</span></summary>
+<div class="sbody">
+
+<details class="sub">
+<summary>Background · How Bell’s theorem came about</summary>
+<div class="in">
+  <p><b>The trigger: the EPR paradox.</b> In 1935 Einstein, Podolsky and Rosen (EPR, after their initials) published a paper arguing that quantum mechanics is “incomplete”. The trigger was <b>entanglement</b>: after two particles interact and separate, measuring one seems to instantly “decide” the state of the other, however far apart they are. Einstein called this “spooky action at a distance” and found it absurd. He believed particles have definite values before measurement, fixed by a set of not-yet-known <i>hidden variables</i> λ. On this view quantum randomness is only our ignorance, and the universe is fundamentally <b>deterministic</b> and <b>local</b>.</p>
+  <p><b>Bell’s decisive step.</b> For decades the “quantum vs hidden variables” debate stayed philosophical, with no experiment able to tell them apart. In 1964 John Bell proved that if EPR is right (local hidden variables exist, and the measurement settings are independent of λ), then the correlations between the two sites must obey an inequality: the <button type="button" class="term" data-g="bell">Bell inequality</button>, whose testable form is <button type="button" class="term" data-g="chsh">CHSH</button>. For the first time, a philosophical dispute became a math problem that an experiment could settle.</p>
+  <p><b>The experimental verdict.</b> Experiments repeatedly measured correlations beyond the inequality (in CHSH form, <b>S ≈ 2.828 &gt; 2</b>), <b>violating Bell’s inequality</b>. So at least one of the three EPR premises is false. Each way out corresponds to an interpretation:</p>
+  <ul class="clean">
+    <li>Give up <b>locality</b> → Bohmian mechanics (accepts faster-than-light influence)</li>
+    <li>Give up <b>realism</b> → Copenhagen interpretation (measurement creates the outcome)</li>
+    <li><b>Give up measurement independence → superdeterminism (the path this research takes)</b></li>
+  </ul>
+  <p><b>What did Bell himself think of superdeterminism?</b> Bell saw this third path himself. In a 1985 BBC interview (collected in <i>The Ghost in the Atom</i>, 1986) he acknowledged that there <b>is a way to escape spooky action at a distance</b>: assume the universe is completely deterministic, so that even the experimenter’s “choice” of which direction to measure was fixed in advance. Then the puzzle of how particle A learns, faster than light, what was measured at B disappears, because the universe (particle A included) “already knows” what will be measured and what the result will be. But Bell <b>did not favor</b> this path. He found the assumption that experimenters have no free choice too unattractive and did not pursue it. Superdeterminism was therefore pointed out and set aside by Bell himself: logically sound, psychologically hard to accept. This research sets out to work that set-aside path through to the end.</p>
+  <p><b>A key term: measurement independence.</b> Measurement independence (also called statistical independence or free choice) is an implicit assumption of Bell’s theorem: <b>the experimenter’s choice of measurement direction is unrelated to the particle’s hidden variable λ</b>. λ does not “know” how you will choose; the two are statistically independent. Classical intuition treats this as obvious: the direction I measure is my free decision right now, so how could it be tied to a particle that set off long ago? That is why Bell’s derivation can freely assume the experimenter could have picked any direction. Superdeterminism <b>drops</b> exactly this assumption. If λ and the settings come from the same determined universe and are correlated, the experimenter no longer chooses settings independently, the premise of Bell’s derivation is removed, and quantum correlations can exceed the classical bound with no action at a distance. <i>Why</i> λ and the settings would be correlated is the question that invariant-set theory answers geometrically.</p>
+  <p>This research starts from that crack. It chooses superdeterminism because it is the only option that keeps both determinism and locality.</p>
+</div>
+</details>
+
+<div class="prose">
+  <p>Picking up from that crack: Bell’s inequality is violated in experiments, so at least one EPR premise must go.</p>
+  <p><b>This research chooses superdeterminism</b>, the only way to keep both determinism and locality. The price is admitting that <i>what gets measured</i> is itself determined by the initial conditions of the universe, so the hidden variable λ is correlated with the measurement settings. The key move is to turn this into an engineering problem: “λ is correlated with the settings” can be measured exactly as the mutual information I(λ; setting), the “cheating fuel” of superdeterminism. Hall (2011) proved that <button type="button" class="term" data-g="singlet">fully reproducing the singlet correlation</button> −cos(θ) needs at least <b>0.0663 bit</b> of this mutual information. That number is the theoretical yardstick for the whole project: the closer a model gets to it, the less it cheats.</p>
+</div>
+
+<details class="sub">
+<summary>The three main superdeterministic models</summary>
+<div class="in">
+  <p><b>Superdeterminism is not a single theory. The field has three main approaches:</b></p>
+  <ul class="clean">
+    <li><b>Palmer’s <button type="button" class="term" data-g="ist">invariant-set theory</button></b> (★ used here): the state of the universe is confined to a <b>fractal, measure-zero invariant set</b> in state space. λ and the measurement settings share an origin in that set and are correlated, which violates measurement independence and removes Bell’s premise.</li>
+    <li><b>’t Hooft’s cellular-automaton interpretation</b>: quantum mechanics emerges from a <b>deterministic cellular automaton</b> at the Planck scale, and measurement choices are correlated with the underlying “ontic states”.</li>
+    <li><b>General superdeterminism</b> (Hossenfelder and others): no specific mechanism; it <b>directly denies statistical independence</b> and argues, at the level of information theory, for the plausibility and cost of measurement dependence.</li>
+  </ul>
+  <p>This research follows Palmer’s invariant-set approach because it offers the most concrete and computable geometric object, a fractal invariant set, which is exactly the kind of thing a differentiable neural network can try to approximate.</p>
+  <p><b>The problem all three must answer: <button type="button" class="term" data-g="finetune">fine-tuning</button>, or the “conspiracy” charge.</b> This is the main objection to superdeterminism (Wood &amp; Spekkens, 2015). For the correlation between λ and the settings to reproduce the quantum prediction <b>exactly</b> in every experiment, the initial conditions of the universe seem to need tuning to an almost <b>conspiratorial</b> degree, which looks unnatural and ad hoc. Superdeterminism deliberately gives up measurement independence (admitting λ and settings are correlated), and fine-tuning is the objection it takes in return. The two are opposite sides of the same debate.</p>
+  <p>The three models differ in <b>how they answer fine-tuning</b>. Palmer’s answer is the most geometric: the correlation is not tuned by anyone; it is an <b>automatic consequence</b> of the geometric fact that the universe’s state lies on a fractal invariant set, with no fine-tuning of initial conditions required. Hossenfelder &amp; Palmer (2020) wrote a dedicated reply to this charge.</p>
+</div>
+</details>
+
+<div class="summary"><span class="k">Ultimate goal</span>Build a dynamical system with four hard properties (high-dimensional · fractal, measure-zero invariant set · intrinsic cos · differentiable) from which quantum correlations emerge naturally. This is the “invariant set that fits the universe” Palmer envisions, approached with a differentiable <button type="button" class="term" data-g="pinn">PINN</button> and symbolic regression.</div>
+
+<article class="step">
+  <div class="step-h"><span class="n">1.1</span><h3>Establish the CHSH criterion and the quantum limit</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Using the standard CHSH angles (0°, 90°, 45°, −45°), verify by hand that quantum mechanics reaches S = 2√2. This is the physical yardstick for every later experiment.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>Classical S ≤ 2 and the quantum Tsirelson bound 2√2 ≈ 2.828 are pinned down. This is the red line for judging “beyond classical” and “cheating”.</p></div>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">1.2</span><h3>Quantify the cost of superdeterminism</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Translate “giving up measurement independence” into information theory: how strongly λ is tied to the settings is the <button type="button" class="term" data-g="mi">mutual information</button> I(λ; setting). A minimal model shows it directly: the larger the <button type="button" class="term" data-g="md">measurement dependence</button> δ, the more mutual information I is needed.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>Hall’s 2011 lower bound of 0.0663 bit is introduced as the theoretical anchor for the minimum measurement dependence needed to reproduce the singlet (orange dashed line). It corresponds to a small δ ≈ 0.15. At δ = 0 (measurement independence) I = 0; at δ = 0.5 (maximal dependence) I = 1 bit.</p></div>
+  <figure><img src="img/1-3-cost-vs-delta.png" alt="Mutual information I as a function of measurement dependence delta" loading="lazy"></figure>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">1.3</span><h3>Lock in the four hard properties of the ultimate rule</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Break the requirements of Palmer’s invariant-set theory into four testable properties: high-dimensional, fractal (measure zero), intrinsically producing cos, and differentiable.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>“Fractal means non-differentiable” versus “a PINN must be differentiable” is the central deadlock, the hardest contradiction in the whole project. Stage 5 confronts it directly.</p></div>
+</article>
+
+<div class="summary"><span class="k">Stage summary</span>This stage turns a philosophical claim (superdeterminism) into a computable, falsifiable engineering goal: reproduce quantum correlations with as little measurement dependence as possible while satisfying <button type="button" class="term" data-g="ns">no-signaling</button>.</div>
+</div>
+</details>
+
+<!-- ================= STAGE 2 ================= -->
+<details class="stage" id="s2" open>
+<summary><span class="snum">2</span><span class="stitle">Tools and foundations</span><span class="chev">▸</span><span class="ssub">The toolbox for a differentiable invariant-set surrogate</span></summary>
+<div class="sbody">
+
+<div class="prose">
+  <p><b>Why is differentiability unavoidable? Because of how a <button type="button" class="term" data-g="pinn">PINN</button> works.</b> A PINN is trained by <button type="button" class="term" data-g="gd">gradient descent</button> (backpropagation): it repeatedly computes the gradient of the loss with respect to the parameters and nudges the parameters in a better direction. A gradient exists only if the <b>loss is differentiable in the parameters</b>. Without differentiability there is no gradient, and the whole gradient-optimization machine cannot run.</p>
+  <p>That makes the methodological requirement clear: to have a PINN “learn” an invariant set, we <b>first need a differentiable surrogate</b> that describes the set, so gradients can flow through it and guide optimization. That is the first task of this stage: <b>building a differentiable invariant-set surrogate</b>.</p>
+  <p><b>This also plants the central tension of the whole project.</b> The invariant set the ultimate rule needs is <b>fractal and measure-zero</b>, and so non-differentiable everywhere, while a PINN can only work with differentiable things. The “differentiable vs fractal” conflict runs through everything until Stage 5 confronts it.</p>
+  <p>This stage first secures the differentiable side, and in parallel sets up two <b>tools for checking whether results can be trusted</b>. They do not produce models; they exist to check whether each later model’s numbers are credible. One is a <b>convex-optimization LP</b> that acts as a cost yardstick or referee: given a correlation curve, it computes exactly the lower bound on the cost of reproducing it, and every model’s reported cost is checked against it. The other is a set of <b>methodological rules</b> against measurement failure (calibrate first, use multiple seeds, never conclude from a single run, count negative results as results), which acts as the project-wide defense against cheating.</p>
+</div>
+
+<article class="step">
+  <div class="step-h"><span class="n">2.1</span><h3>Differentiable invariant-set surrogate · four prototype methods</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Consistency residual (points on the invariant set have residual → 0) · Lyapunov (separate the attractor by contraction and expansion) · invariant measure (learn the measure) · Koopman (operator spectrum).</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>All four were made to work and were first calibrated on problems with known answers. The invariant-measure method passed a three-way cross-check against the arcsine distribution; the Koopman method proactively withdrew unverified data.</p></div>
+
+  <details class="sub">
+  <summary>How it works · click to expand</summary>
+  <div class="in">
+    <p>How do you represent an invariant set in a differentiable way? An invariant set is the geometric object in a dynamical system that maps back onto itself under the dynamics (an attractor or support). It may be a fractal that no single equation describes, so it cannot be optimized directly. Instead we need a <b>differentiable proxy quantity</b> that says whether a point or a distribution lies on the set, and then approach it by gradient descent. This stage tried four complementary routes in parallel (click a method name’s ⓘ for the full explanation).</p>
+
+    <details class="sub">
+    <summary>① <span><button type="button" class="term" data-g="residual">Consistency residual</button>: turn a set into a differentiable function via its zero level set (prone to trivial solutions)</span></summary>
+    <div class="in">
+      <p>This provides the <b>main framework</b> of the surrogate: encode the invariant set as the zero level set of a differentiable function g<sub>θ</sub>, and turn “is it invariant?” into a loss with a gradient. Of the four routes, it is the only one that builds a “differentiable surrogate plus optimizable objective” from scratch; the other three verify or supplement it.</p>
+      <figure><img src="img/2-1-residual.png" alt="Consistency residual results" loading="lazy">
+      <figcaption><span><b>Left</b>: calibration of the ruler. Points on the invariant set have residual ≈ 3e−8; randomly scattered points ≈ 1.6e−2, six orders of magnitude apart, so the ruler works. <b>Right</b>: used as a training loss, the network collapses to the identity map f(x) ≈ x (the blue line sits on the grey y = x). Loss = 0 but it means nothing: a trivial solution.</span></figcaption></figure>
+    </div>
+    </details>
+
+    <details class="sub">
+    <summary>② <span><button type="button" class="term" data-g="lyap">Lyapunov</button>: look at orbit contraction and expansion to block trivial solutions</span></summary>
+    <div class="in">
+      <p>This provides the <b>acceptance test</b>. Whether the surrogate has learned a real attractor, and whether it is fractal, needs an objective measure. The Lyapunov spectrum gives the contracting and expanding directions, whether volume collapses, and a non-integer dimension. It checks the hard property “measure-zero fractal invariant set” and lays the measurement groundwork for the fractal tests in Stage 4.</p>
+      <figure><img src="img/2-1-lyapunov.png" alt="Lyapunov results" loading="lazy">
+      <figcaption><span><b>Left</b>: the learned energy V(x) decreases monotonically in the window, pushing points toward the attractor. <b>Middle</b>: an improvement over method ①, a real attractor is learned (x ≈ 2.41), but it escapes outside the training window [−1, 1]. <b>Right</b>: with a range constraint it is pulled back inside (x ≈ 1.015). Lyapunov rules out the identity trivial solution and really builds an attractor, but it controls shape, not location, so extra constraints are still needed.</span></figcaption></figure>
+    </div>
+    </details>
+
+    <details class="sub">
+    <summary>③ <span><button type="button" class="term" data-g="measure">Invariant measure</button>: learn the actual probability density, calibrated against arcsine to catch trivial solutions</span></summary>
+    <div class="in">
+      <p>This adds the <b>measure dimension</b>. Method ① only describes whether a point is on the set (its shape), not how much probability sits where on it. Yet the heart of Palmer’s invariant set is precisely that singular, measure-zero measure. Learning the invariant measure μ lets the surrogate describe the measure as well as the shape, and a three-way arcsine cross-check shows this differentiable route to learning a measure is reliable.</p>
+      <figure><img src="img/2-1-invariant-measure.png" alt="Invariant measure of the r=4 logistic map" loading="lazy">
+      <figcaption><span>Calibration of this method: the invariant measure of the r = 4 logistic map. <b>Blue</b> = μ learned by optimization; <b>orange</b> = histogram from long trajectories (ground truth); <b>green</b> = the analytic arcsine distribution μ(x) = 1/(π√(x(1−x))). The three curves broadly coincide, with probability spiking at both ends (the arcsine signature), so the differentiable route to learning a measure gets a known answer right.</span>
+      <span><b>Why the r = 4 logistic map?</b> The logistic map x → r·x(1−x) is the most classic and simplest one-dimensional model in chaos research. Only at the special value r = 4 does it have an exact analytic invariant measure (the arcsine distribution). Because the answer is known at r = 4, it serves as a calibration problem, exactly as the “calibrate first” rule requires.</span></figcaption></figure>
+    </div>
+    </details>
+
+    <details class="sub">
+    <summary>④ <span><button type="button" class="term" data-g="koopman">Koopman</button> (operator spectrum): compute the measure from the spectrum, an independent check that needs no differentiable rule</span></summary>
+    <div class="in">
+      <p>This provides a <b>backup route that does not depend on a differentiable rule</b>. When the dynamics are too complex to differentiate, the Koopman spectrum can compute singular or fractal measures directly at the operator level, cross-checking methods ① and ③. It also served as a <b>cautionary example</b>: it prompted a proactive withdrawal of unverified data, which reinforced the rule to calibrate first and never trust a single run.</p>
+      <figure><img src="img/2-1-koopman.png" alt="Koopman operator results" loading="lazy">
+      <figcaption><span><b>Left</b>: eigenvalues of the Koopman operator 𝒦 (on the unit circle = conserved, inside = decaying). <b>Right</b>: the one-step prediction reconstructed from the spectrum (orange dashed) almost exactly matches the true map f(x) = 4x(1−x) (blue), so the spectral method does capture the dynamics. Because the spectrum is sensitive to truncation, parts that were not fully verified were deliberately left blank at this stage.</span></figcaption></figure>
+    </div>
+    </details>
+
+    <p><b>Why run four in parallel?</b> No route is best a priori. Residual and Lyapunov are good at describing the <i>shape of the set</i>; invariant measure and Koopman are good at describing the <i>measure on the set</i>. The four cross-check each other, and all are differentiable and optimizable, which lays the foundation for learning an invariant set with a PINN.</p>
+    <figure><img src="img/2-1-four-methods-flow.png" alt="Shared workflow of the four methods" loading="lazy">
+    <figcaption>Workflow: the four methods share one recipe. Sample points or trajectories → score points or distributions with a differentiable quantity → calibrate on a known answer → optimize or solve by gradient → accept or reject. They differ only in step ②, which differentiable quantity does the scoring.</figcaption></figure>
+    <figure><img src="img/2-1-four-methods-compare.png" alt="Division of labor among the four methods" loading="lazy">
+    <figcaption>Division of labor: residual and Lyapunov focus on the shape of the set; invariant measure and Koopman focus on the measure on it. The four cross-validate each other.</figcaption></figure>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">2.2</span><h3>Convex-optimization cost LP</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Use <button type="button" class="term" data-g="lp">convex optimization</button> to compute exactly the minimum measurement-dependence cost needed to reproduce a given correlation curve (CHSH value). This is the cost yardstick, the referee, for the whole project.</p>
+  <p><b>Relation to the superdeterministic models that were trained:</b> the LP lower bound depends only on the input CHSH value, not on any model. The LP is a reference yardstick, not a model’s score.</p>
+  <p><b>Relation to Hall’s 0.0663:</b> 0.0663 is the LP lower bound for the ideal singlet curve −cos. Its role is to calibrate the ruler: feed in the ideal −cos, and if the result is 0.0663, the solver is correct.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>cvxpy reaches the global optimum and was independently recomputed. Calibration on the ideal −cos must give 0.0663, which is the precondition for trusting the LP.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>A key insight, foreshadowing Stage 6: this LP computes the <i>theoretical lower bound for a correlation curve</i>, not the true mutual information of any specific mechanism. That distinction becomes central in the audit.</p></div>
+  <figure><img src="img/2-2-lp-calibration.png" alt="Calibration of the LP cost yardstick" loading="lazy">
+  <figcaption><span><b>Left</b>: two problems with known answers are fed to the LP, the ideal singlet −cos (blue) and a classically achievable curve (grey, produced by uniform λ). <b>Right</b>: the LP readings. The classical problem reads 0 everywhere (numerical error &lt; 1e−15; the answer is 0). The ideal −cos problem peaks at 0.0667 ≈ Hall’s 0.0663 (peak at 156° = 180° − 24°, the mirror point, equivalent to Hall). Both readings are right, so later readings from this ruler can be trusted.</span></figcaption></figure>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">2.3</span><h3>CHSH reader + methodological rules</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Two pieces of infrastructure: a <button type="button" class="term" data-g="reader">CHSH reader</button> (a “lie detector” against misreadings) and the <button type="button" class="term" data-g="rules">methodological rules</button> (the project-wide defense against cheating).</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>This discipline is the reason the 11 later measurement failures were all caught on the spot.</p></div>
+  <figure><img src="img/2-3-chsh-reader.png" alt="Calibration of the CHSH reader" loading="lazy">
+  <figcaption><span><b>Reader calibration: proving it reads known answers correctly.</b> Three kinds of data are fed in:</span>
+  <span>· <b>Quantum-optimal data</b> (green) → reads <b>S = 2.835 ≈ 2√2</b>, right at the quantum limit;<br>· <b>Classical local data</b> (grey) → reads <b>S = 2.000</b>, at the classical limit;<br>· <b>Data with the wrong angles</b> (red) → reads <b>S ≈ 0</b>, so this “looks like measuring but measures the wrong thing” error is <b>caught on the spot</b>.</span>
+  <span>The right panel also checks the no-signaling violation; all three are far below the 0.02 red line, so the strong correlations are legitimate and nothing is secretly signaling. This is “calibrate first”: a new tool proves itself on problems with standard answers (quantum 2.828, classical ≤ 2) before its later readings are trusted.</span></figcaption></figure>
+</article>
+
+<div class="summary"><span class="k">Stage summary</span>With tools and discipline in place, the question moves from “can it be computed” to “can it be computed credibly”. Every number must pass three gates: calibrate first, multiple seeds, and anti-cheating checks.</div>
+</div>
+</details>
+
+<!-- ================= STAGE 3 ================= -->
+<details class="stage" id="s3" open>
+<summary><span class="snum">3</span><span class="stitle">Reproduce · extend · generate</span><span class="chev">▸</span><span class="ssub">From cost curves to cos emergence</span></summary>
+<div class="sbody">
+<div class="prose">
+  <p>With the foundation built, this stage advances on three lines:</p>
+  <p>(1) Draw the full cost–correlation trade-off curve. The LP yardstick from Stage 2 was calibrated only at single points; here it sweeps the full range of S from 2 to beyond quantum.</p>
+  <p>(2) Rigorously reproduce Hall, checking whether the Stage 2 methods recover the accepted answer (0.0663 bit, peak at 24°) and so validating them.</p>
+  <p>(3) Move the PINN from passive fitting to active generation. The ultimate goal requires the cos correlation to <i>emerge intrinsically</i> rather than be planted, so we first verify, in the simplest smooth setting, that a rule can grow cos on its own, before Stage 4 adds the harder fractal constraint.</p>
+</div>
+
+<article class="step">
+  <div class="step-h"><span class="n">3.1</span><h3>The cost curve and a quadratic law</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Building on CHSH, parameterize setting–λ with a softmax and sweep S from 2 to beyond-quantum with convex optimization.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>At S = 2.828, I = 0.0462 bit. The cost approximately follows a (S − 2)² quadratic law, a numerical fit (R² = 0.9993) and not an analytic proof. “This model’s 0.046” and “Hall’s 0.0663” were correctly kept apart and a false equivalence was rejected.</p></div>
+  <details class="sub">
+  <summary>How it works · click to expand</summary>
+  <div class="in">
+    <p><b>Why is this model 0.046 while Hall is 0.0663?</b> Both numbers are “the minimum measurement-dependence mutual information needed to reproduce a target correlation under no-signaling”. They differ only in the <b>target</b>:</p>
+    <ul class="clean">
+      <li><b>0.0462 bit</b>: only the four CHSH setting combinations must give S = 2.828. The “cheat sheet” λ only has to handle four fixed exam questions.</li>
+      <li><b>0.0663 bit</b> (Hall 2011): the correlation must equal −cos(θ) exactly at every angle θ, a whole continuous curve, infinitely many questions.</li>
+    </ul>
+    <p>The more questions the cheat sheet must cover, the more information about the settings it needs to carry. Mathematically this is monotonicity of convex optimization: more constraints → smaller feasible set → the minimum can only rise. So the cost of reproducing the full singlet curve is necessarily at least the cost of reproducing only the CHSH value, and 0.0462 &lt; 0.0663 is <b>a structural necessity, not a numerical coincidence</b>. That is why the false equivalence was rejected: 0.046 does not count as reproducing Hall. The genuine full-angle reproduction of 0.0663 is done in the next card (the sphere version).</p>
+    <p><b>What does the quadratic law buy us?</b></p>
+    <p>① <b>It upgrades the cost from one point to a law.</b> M1 gave only the value at S = 2.828; the law I ≈ 0.0665·(S − 2)² describes the whole range: how far you exceed classical, the cost grows with the square of the excess.</p>
+    <p>② <b>It gives the intuition that going beyond classical starts free.</b> A quadratic has zero value and zero slope at S = 2. Barely exceeding the classical limit needs negligible measurement dependence; the cost climbs more steeply as you approach the quantum limit.</p>
+    <p>③ <b>It is the baseline for a “no kink” negative result.</b> With the smooth quadratic confirmed in the quantum region, the curve stays smooth past 2.828 into the beyond-quantum region (left panel below). If the quantum limit 2√2 were special under the measure of measurement dependence, the curve would bend there, and it does not. Conclusion: measurement dependence cannot explain what is special about the Tsirelson bound. This is the key negative result of the extension line (card 3.3).</p>
+    <figure><img src="img/3-1-quadratic-law.png" alt="Full-range cost curve and quadratic law" loading="lazy">
+    <figcaption><span><b>Left</b>: sweep S from 2 (classical limit) past 2√2 (quantum limit, the curve is smooth with no kink) into the beyond-quantum region. At S = 2.828, I = 0.0462 bit, consistent with the M1 single point. <b>Right</b>: in the quantum region, plotting I against (S − 2)² gives a straight line through the origin (slope 0.0665, R² = 0.9993), directly confirming the quadratic law.</span></figcaption></figure>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">3.2</span><h3>A genuine reproduction of Hall</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>On the <button type="button" class="term" data-g="bloch">Bloch sphere</button>, use <button type="button" class="term" data-g="fib">Fibonacci sampling</button> and dot-product sign measurements to reproduce the full-angle singlet −cos.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>An independent reproduction of Hall’s 2011 value of 0.0663 bit (peak at 24°, fivefold agreement). This is the most solid verification anchor in the project.</p></div>
+  <figure><img src="img/3-2-sphere-hall.png" alt="Sphere-version cost curve reproducing Hall" loading="lazy">
+  <figcaption><span>What the curve means: for each measurement angle θ, convex optimization finds the minimum measurement dependence needed to bend that angle’s correlation to the quantum value −cos(θ).</span>
+  <span><b>Zero cost at three points</b> (θ = 0°, 90°, 180°): the classical correlation from uniform λ (measurement independence) happens to equal −cos at these three angles, so no peeking is needed. Away from them, −cos and the classical curve diverge, cost rises, and two peaks form.</span>
+  <span><b>Orange peak 0.0667 bit at 156°</b>: mirror-equivalent to Hall’s 0.0663 bit at 24°. This construction (singlet −cos with B = −sign(y·λ)) is mirror-symmetric about 90°, so 24° and 156° are the same physical point; the numerical error is about 0.3%.</span>
+  <span><b>“Fivefold agreement”</b> means the value, model, measure, aggregation method and peak location (up to the mirror) all match Hall’s paper. This is a full check-up of the Stage 2 toolchain on a problem with an accepted answer; only after passing it does the toolchain earn the right to enter new territory where no answer is known.</span></figcaption></figure>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">3.3</span><h3>Extensions: more settings, higher dimension, many bodies</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Extend the framework in four directions: more settings (chained Bell), higher dimension (qudit / CGLMP), many bodies (GHZ / Mermin), and beyond-quantum (PR-box).</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>The cheating cost goes “two up, one down”: it rises with number of bodies and dimension, and falls with number of settings. There is no kink at the quantum limit 2.828, so measurement dependence cannot explain what is special about Tsirelson’s bound.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>A few high-N points (N = 5, 6) are hard-coded values not reproduced in the script; the trend should be read from the computed points.</p></div>
+  <p>All earlier costs were computed in the <b>standard CHSH scenario</b>: two parties, 2 settings each, 2 outcomes per measurement, target at most the quantum limit 2.828. This card turns each of those four knobs in turn to see which kind of complexity the cheating cost is sensitive to. All four directions use the same strict procedure: first anchor at a known answer (n = 2 for A, d = 2 for B and S = 2.828 for D all return to CHSH’s 0.046, consistent with card 3.1), then find the minimum measurement dependence by convex optimization.</p>
+
+  <details class="sub">
+  <summary>① A · More settings (chained Bell): turning the number of settings n</summary>
+  <div class="in">
+    <p>In CHSH, Alice and Bob each have only 2 settings. With n = 2 the angles are coarsely cut, and neighboring directions are far apart (say 90° or 45°). That is exactly where quantum and classical theories differ most: at large angles, quantum correlations reach strengths no classical model can. With large n, you are effectively approximating a continuously rotating detector with many small steps. For continuous, slowly varying processes, classical local realism can almost always keep up by following locally, the way a circular arc cut finely enough looks like straight segments, and a local model needs nothing faster than light. So the more settings, the more the setup resembles a continuous process classical physics can approximate, and the quantum advantage is diluted.</p>
+    <figure><img src="img/3-3a-settings.png" alt="Cost versus number of settings" loading="lazy">
+    <figcaption>Cost <b>decreases</b> with settings per party n: n = 2 → 0.046, n = 3 → 0.043, n = 4 → 0.033, n = 5 → 0.025. The reason is the “small steps chasing a continuous rotation” intuition above: more settings dilute the quantum advantage, so less peeking is needed to bend classical correlations into quantum ones.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② B · Higher-dimensional qudits (CGLMP): turning the outcome dimension d</summary>
+  <div class="in">
+    <p>So far each measurement had only two outcomes, ±1 (a qubit), like a coin toss. A qudit gives d possible outcomes per measurement, like rolling a d-sided die; the CGLMP inequality (Collins–Gisin–Linden–Massar–Popescu) generalizes to d outcomes and reduces to CHSH at d = 2. The more faces, the harder it is for two dice to stay “in sync”. A classical local model can only fake it with a pre-agreed lookup table, while entanglement weaves a finer correlation structure across the d outcomes that classical strategies struggle to imitate. The gap between these fine quantum correlations and classical physics widens with d, so the cost increases.</p>
+    <figure><img src="img/3-3b-qudit.png" alt="Cost versus outcome dimension" loading="lazy">
+    <figcaption>Cost <b>increases</b> with outcome dimension d: d = 2 → 0.046, d = 3 → 0.058, d = 4 → 0.062. High-dimensional entanglement is more nonlocal (the quantum violation grows with d), so reproducing it is more expensive.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ C · Many-body GHZ (Mermin): turning the number of entangled parties N</summary>
+  <div class="in">
+    <p>So far only two parties (Alice and Bob) were entangled. The GHZ state (Greenberger–Horne–Zeilinger) extends entanglement to N particles. By analogy with higher dimension, this is like tossing N coins: the more coins, the harder it is for them to stay in sync, and the cost rises.</p>
+    <figure><img src="img/3-3c-ghz.png" alt="Cost versus number of parties N" loading="lazy">
+    <figcaption>Cost rises <b>in steps</b> with N. At N = 2 this construction’s quantum value equals the classical bound (no violation, cost 0); N = 3, 4 → 0.208; N = 5, 6 → 0.339, pairing odd and even into steps. The quantum violation grows exponentially with N but the cost only climbs gently: more expensive for many bodies, but <b>not an exponential blow-up</b> (N = 5, 6 are hard-coded points; see the honest boundary).</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>④ D · Beyond-quantum (PR-box): turning the correlation strength S</summary>
+  <div class="in">
+    <p>A PR-box (Popescu–Rohrlich box) is a hypothetical correlation that strictly satisfies no-signaling yet pushes CHSH to its algebraic maximum S = 4: stronger than quantum, but still unusable for faster-than-light communication. Since the cost curve already established that minimum measurement dependence is quadratic in CHSH, extending into the beyond-quantum range makes the cost keep rising.</p>
+    <figure><img src="img/3-3d-prbox.png" alt="Beyond-quantum cost curve" loading="lazy">
+    <figcaption>Sweeping S from 2 to the algebraic maximum 4, the cost is smooth and monotonic (S = 2.828 → 0.046, S = 4 → 0.415) and shows <b>no kink</b> at the quantum limit 2.828 (red dashed line). Measurement dependence treats quantum and beyond-quantum alike. Corollary: why quantum mechanics stops at 2.828 (Tsirelson’s bound) cannot be explained by measurement-dependence cost; what makes quantum special lies elsewhere.</figcaption></figure>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">3.4</span><h3>The PINN moves into generation</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Instead of fitting data points, learn in reverse the rule that produces a target distribution; then let cos emerge from shared-origin dynamics.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>① Learning a rule in reverse works (calibrated against arcsine; three necessary conditions identified). ② A unified model can intrinsically produce the full-angle cos, but its cost exceeds the per-angle lower bound (about 2.6× on average, about 4.5× at the peak). The 0.0663 bit of measurement dependence for cos cannot be avoided even after removing the dot product, another confirmation of Bell.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>The multiplier for the unified PINN was honestly downgraded to an order-of-magnitude 2–5× (the peak drifts with training; the optimization is ill-conditioned). The measurement function for cos is still a hand-made sign dot product, so genuine intrinsic emergence remains open.</p></div>
+
+  <div class="formula" role="img" aria-label="Experiment chain">M5 experiment chain: from verification to generation
+5.1  Experiment 0 · learn a rule in reverse ✓
+     target = arcsine distribution (analytic answer as safety net)
+     network acts as the rule f_θ; learns dynamics that produce it
+     finds 3 necessary conditions: constrained rule family ·
+     real trajectories · short iteration chains
+ │
+ ├─ Discrete circle ✗ (discarded, cautionary example)
+ │    first try at intrinsic cos: bends the curve, but cost falls
+ │    far below Hall 0.0663 bit
+ │    cause: discrete sign measurement splits λ into blocks;
+ │    within a block it can shift for free → numerical cheating
+ │
+ ├─ Continuous sphere · unified PINN
+ │    move to the 3D Bloch sphere, closing the discrete loophole
+ │    one PINN produces the full-angle −cos (mean KL = 0.123 bit)
+ │    cost becomes real, but clearly too high; peak artifact
+ │    sits at the endpoints 0° / 180°
+ │
+ ├─ Variant B · sin(θ) scaling
+ │    perturbation ∝ sin(θ), endpoints automatically cost 0
+ │    peak moves toward Hall’s 24° (mean KL = 0.090 bit)
+ │    but ill-conditioned: peak drifts with seed (24°→15°→8°)
+ │
+ └─ Variant C · per-angle independent (gold standard)
+      back to per-angle convex optimization (as in 3.2)
+      peak 0.0670 bit @ 24°, reproduces Hall 2011 (~1% error)
+      = the lower bound any unified model can reach;
+      used to judge the multiplier</div>
+  <p style="color:var(--muted);font-size:.93rem">Overview: first verify that learning a rule in reverse works at all. The discrete circle, the first attempt at intrinsic cos, hit numerical cheating and was discarded. The continuous sphere with a unified PINN closed that loophole and made the cost real but too high. Variant B (sin scaling) removed the endpoint artifact but trained unstably. Variant C (per-angle independent) used convex optimization to give the theoretical lower bound, a gold standard for measuring how much more the two unified models cost.</p>
+
+  <details class="sub">
+  <summary>① Learning a rule in reverse: verify the mechanism first</summary>
+  <div class="in">
+    <p>Before tackling intrinsic cos, a more basic question: can a PINN learn, in reverse, the dynamical rule that produces a target distribution, instead of fitting data points forward as before? The target was chosen to have an <b>analytic answer</b> for calibration: the arcsine distribution (the invariant measure of the r = 4 logistic map, already used for the <button type="button" class="term" data-g="measure">invariant-measure method</button>). The network acts as the rule f<sub>θ</sub> and learns dynamics that produce it.</p>
+    <figure><img src="img/3-4-inverse-rule.png" alt="Learning a rule in reverse" loading="lazy">
+    <figcaption><span><b>Left</b>: the learned rule f<sub>θ</sub> (blue) lies roughly near the target logistic map (orange), clearly away from the do-nothing identity y = x (grey dashed), the cheating solution an optimizer most easily slides into. <b>Right</b>: the histogram after iterating the learned rule for a long time (blue) matches the arcsine target (orange) and the rule’s own fixed-point distribution (green), with probability spiking near 0 and 1, the arcsine signature. Conclusion: learning a rule in reverse works, and three necessary conditions were found (constrain the rule family, use real trajectories rather than single steps, keep iteration chains short).</span></figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② Discrete circle: first attempt, numerical cheating (discarded)</summary>
+  <div class="in">
+    <p>With the mechanism verified, the real attack on intrinsic cos began: λ on a circle (discretized into N cells), Alice’s direction fixed, Bob’s direction θ, and the network learns a conditional measure μ<sub>θ</sub>(λ) to bend the default triangle-wave correlation into the quantum −cos(θ).</p>
+    <figure><img src="img/3-4-discrete-circle.png" alt="Discrete circle attempt" loading="lazy">
+    <figcaption><span><b>Left</b>: the learned μ<sub>θ</sub> (orange) does bend the uniform baseline’s triangle wave (blue) into a curve almost on top of the quantum −cos(θ) (green); the bending looks like a success. <b>Right</b>: but the conditional measure itself is a piecewise-jumping square wave in λ (jump positions differ by θ), not a smooth distribution. The optimizer did not make fine continuous adjustments to the λ curve. It crudely split the circle into a few large blocks (the positive and negative regions of the sign function) and only moved probability mass between blocks, placing it arbitrarily within blocks, since the measurement ignores details inside a block.</span></figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ Continuous sphere · unified PINN: loophole closed, but cost too high</summary>
+  <div class="in">
+    <p>λ moved from the discrete circle to a continuous distribution on the <button type="button" class="term" data-g="bloch">Bloch sphere</button>, with the dot-product sign measurement restored (the same setup as “A genuine reproduction of Hall”). There are no blocks to exploit on the sphere, closing the discrete-circle loophole. <b>One</b> PINN is trained to give the conditional distribution for all angles θ at once, rather than solving each angle separately as convex optimization does.</p>
+    <figure><img src="img/3-4-unified-pinn.png" alt="Unified PINN on the sphere" loading="lazy">
+    <figcaption><span><b>Left</b>: the unified model’s E(θ) (blue) almost exactly matches the quantum −cos(θ) (orange); the correlation curve is reproduced well. <b>Right</b>: but the cost is wrong. The true measurement dependence (blue) is <b>highest</b> at the endpoints 0° and 180° (close to 0.30 bit) and dips below Hall’s 0.0663 bit (red dashed) in the middle. Hall’s true peak should be near 24° and the endpoint cost should go to 0. With numerical cheating blocked, the cost is finally real, but the unified model’s shape still carries artifacts and cannot yet be trusted.</span></figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>④ Variant B · sin scaling: endpoint artifact fixed, but training unstable</summary>
+  <div class="in">
+    <p>Diagnosing the endpoint artifact: at θ = 0° or 180°, Alice’s and Bob’s directions coincide or are opposite, and physically perfect (anti)correlation needs no peeking, so the cost should be exactly 0. Multiplying the perturbation amplitude by sin(θ) makes it vanish automatically as θ → 0° or 180°, forcing zero cost at the endpoints.</p>
+    <figure><img src="img/3-4-sin-scaling.png" alt="Variant B with sin scaling" loading="lazy">
+    <figcaption><span><b>Left</b>: the correlation curve still fits −cos(θ) well. <b>Right</b>: the endpoint cost is pushed to 0, and the shape changes from the wrong “high at both ends, low in the middle” to the right form, with the peak moving much closer to Hall’s 24°. <b>But this fix comes from a hand-designed scaling function, treating the symptom rather than letting the mechanism emerge on its own.</b> Rerunning with different random seeds makes the peak drift (24° → 15° → 8°), so the optimization itself is unstable, and the conclusion is only “right order of magnitude”, not an exact reproduction.</span></figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>⑤ Variant C · per-angle independent: back to convex optimization for a gold standard</summary>
+  <div class="in">
+    <p><b>Purpose:</b> the unified PINN (③ and ④) must serve all angles with one set of parameters, which is inherently harder than solving each angle separately. Whether its cost is high cannot be judged in a vacuum; it needs an independent reference.</p>
+    <p><b>Method:</b> no neural network here. Go back to per-angle independent convex optimization: each θ gets its own problem solved for minimum cost, with nothing shared. Convex optimization guarantees the global optimum (unlike neural training, which can get stuck in local solutions and drift with the seed).</p>
+    <p><b>Output:</b> a unified model adds the extra constraint that all angles share one rule. Constraints can only make the optimum worse, so this per-angle curve is a floor no unified model can beat.</p>
+    <figure><img src="img/3-4-per-angle.png" alt="Per-angle convex optimization" loading="lazy">
+    <figcaption><span>Peak 0.0670 bit at 24° (orange star), right on Hall’s 2011 value of 0.0663 bit (red dashed), about 1% error. This curve re-confirms the Stage 3 “genuine reproduction of Hall”; here it serves as the <b>yardstick</b>. Against it, the continuous-sphere unified PINN (peak 0.30, about 4.5× the floor) and Variant B (peak of the same order) give the honest multiplier for how much more a unified model costs than the theoretical floor: about 2.6× on average and about 4.5× at the peak, and only as an order-of-magnitude conclusion because training is unstable.</span></figcaption></figure>
+  </div>
+  </details>
+</article>
+
+<div class="summary"><span class="k">Stage summary</span>Quantum correlations can now emerge from a differentiable rule instead of being filled in by hand. But all of this used smooth measures that fill space, and the hardest property, the measure-zero fractal, has not been touched yet.</div>
+</div>
+</details>
+
+<!-- ================= STAGE 4 ================= -->
+<details class="stage" id="s4" open>
+<summary><span class="snum">4</span><span class="stitle">Shared origin and fractals</span><span class="chev">▸</span><span class="ssub">Confronting the hardest property: a measure-zero invariant set</span></summary>
+<div class="sbody">
+<div class="prose"><p>This stage attacks the two hardest walls. The first is <b>shared-origin generation</b>: take the measurement setting and the hidden variable λ from different readouts of the same trajectory, so that no-signaling holds naturally and the rule contains no explicit setting. The second is <b>a true fractal</b>: earlier smooth measures filled space (nonzero measure), sidestepping the soul of Palmer’s theory. Here a dissipative map compresses the attractor into a measure-zero fractal, facing this property head-on.</p></div>
+
+<article class="step">
+  <div class="step-h"><span class="n">4.1</span><h3>Shared-origin generation</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>The setting and λ share an origin in one trajectory evolved under the chaotic <button type="button" class="term" data-g="cat">Arnold cat map</button>, read out by <button type="button" class="term" data-g="coord">coordinate separation</button>: at the same instant, the x coordinate is the setting and the y coordinate is λ. The rule itself is learnable (cat-map base + PINN perturbation), and training pushes the correlation shape toward −cos.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>In 2D, a learnable shared-origin rule with no explicit setting robustly produces a near −cos correlation (shape gap about 0.06, confirmed over several seeds), with a true cost about 2× Hall. In 3D and 4D, after switching algorithms, the reading drops to about 1.2×, but these are two different kinds of quantity, so we cannot say “going up in dimension lowered the cost” (see the honest boundary).</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p><b>Audit correction, stated plainly.</b> An early claim was “2D cost ≈ 2× Hall → 3D/4D cost ≈ 1.2×, so higher dimension saves cost.” That drop is an illusion. The 2D value of 2× is the <b>true cost</b> of this rule, <b>measured directly</b> with a mutual-information estimator. The 3D/4D value of 1.2× came after the mutual-information estimator <b>stopped working</b> in higher dimension (see ③ below), forcing a switch to the convex-optimization <b>curve-reproduction lower bound</b>. A lower bound answers “what is the least this could theoretically cost”, not “what did this rule actually pay”. Comparing the two and calling it a reduction is a mismatched comparison, overturned in the Stage 6 audit. The <b>true</b> cost of this rule in higher dimension has never been reliably measured; the tooling wall is still unsolved.</p></div>
+  <figure><img src="img/4-1-cost-vs-dim.png" alt="Cost readings by dimension" loading="lazy">
+  <figcaption><span>Cost readings in different dimensions (when the shape truly matches cos): 2D ≈ 2.0× (true cost), 3D ≈ 1.2×, 4D ≈ 1.2× (both convex-optimization lower bounds). <b>Note:</b> the three bars look like “higher dimension is cheaper”, but the 2D bar and the 3D/4D bars are <b>different kinds of quantity computed by different algorithms</b> (see the honest boundary and ② ③ below), and must not be read as one “cost falls with dimension” curve.</span></figcaption></figure>
+
+  <details class="sub">
+  <summary>① The Arnold cat map scheme</summary>
+  <div class="in">
+    <p>Goal: build a rule <b>with no explicit setting</b>, so that the setting and λ grow correlated from the same trajectory. This is the minimal computable version of Palmer’s shared-origin picture.</p>
+    <p>Method: add a PINN perturbation on top of the Arnold cat map (the base) to form one learnable evolution rule. Take the x coordinate at an instant as the setting and the y coordinate as λ (coordinate separation), and set the training loss to the gap between the correlation shape and −cos, so the rule approaches the target shape by itself.</p>
+    <figure><img src="img/4-1-cat-shape.png" alt="Shared-origin rule learns the cos shape" loading="lazy">
+    <figcaption>The correlation from the learned shared-origin rule (blue) closely follows the quantum −cos (red dashed) and clearly departs from the triangle wave (grey dashed). For the first time, cos <b>emerges intrinsically</b> from a shared-origin dynamical rule with no explicit setting, instead of being planted by hand.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② How the 2D cost was measured: robustly about 2× Hall</summary>
+  <div class="in">
+    <p>Once the rule from ① had the right shape, a mutual-information estimator measured its true cost directly, averaged over several seeds (to avoid being fooled by a lucky run). Whether the shared-origin relation used two time points on one trajectory (time separation) or two coordinates at one instant (coordinate separation), the cost stayed robustly <b>around 2× Hall</b> and could not be pushed lower.</p>
+    <figure><img src="img/4-1-floor.png" alt="Floor comparison of time and coordinate separation" loading="lazy">
+    <figcaption>Time separation (blue) ≈ 2.4× Hall; coordinate separation (purple) ≈ 2.1× Hall. Two constructions end up in the same place near 2×, which suggests this is a property of the shared-origin mechanism itself rather than a poorly tuned separation scheme. Coordinate separation is slightly better numerically and was adopted.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ Going to real 3D/4D: cost from convex optimization</summary>
+  <div class="in">
+    <p><b>Why convex optimization:</b> in higher dimension, the mutual-information estimator that directly measures “what this rule actually pays” is unreliable (see ②), so the question has to change. The sign measurement cuts the sphere into four discrete regions by Alice’s and Bob’s directions (++ / +− / −+ / −−). The correlation and cost depend only on how the probability of λ falling in each region changes with θ. That is a <b>discrete probability</b> problem, and convex optimization can compute its <b>lower bound</b> exactly without a continuous mutual-information estimate.</p>
+    <p><b>How this differs from earlier convex optimization:</b> earlier (“cost curve and quadratic law”, “genuine reproduction of Hall”), convex optimization was a <b>yardstick or referee</b>, used only for comparison and never presented as a specific mechanism’s true cost. Here, because of tooling limits, the lower bound is <b>used as a stand-in</b> for “what this shared-origin rule costs”. A lower bound is still only the theoretical minimum, not what the rule actually pays, and the two cannot be equated.</p>
+    <figure><img src="img/4-1-4d.png" alt="4D tuning results" loading="lazy">
+    <figcaption>Best 4D seed: shape gap 0.011, convex lower-bound cost 0.078 bit (≈ 1.2× Hall). 3D is more stable (5 seeds, std &lt; 0.02); its best seed also has gap 0.011 and cost 0.082 bit (≈ 1.2× Hall). The lower bound is only meaningful when the gap truly approaches 0 (the shape really matches cos). In 4D the seeds actually vary a lot (gap from 0.011 to 0.136), and only the best seed is quoted here. “3D/4D is cheaper than 2D” holds only when comparing lower bounds with lower bounds, never against the 2D true cost.</figcaption></figure>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">4.2</span><h3>Building a true fractal by dissipation → 3D unlocks cos</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Goal: combine 3D and a fractal, so that cos still emerges intrinsically on a genuinely measure-zero fractal attractor.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>2D is locked to the triangle wave; moving to 3D unlocks cos. For the first time, cos emerges on a genuinely measure-zero fractal.</p></div>
+
+  <details class="sub">
+  <summary>Attempt 1: Hénon hits a numerical divergence wall</summary>
+  <div class="in">
+    <p>The classic <button type="button" class="term" data-g="henon">Hénon map</button> (a dissipative chaotic system that contracts onto a fractal attractor) was used as a base, with the rule made learnable (Hénon base + PINN perturbation) and trained to match −cos.</p>
+    <p>Result: the Hénon map has an unbounded quadratic term x². Over the repeated iterations of multi-step gradient training it diverged numerically: x was pushed to around −50,000, the whole trajectory escaped, the attractor collapsed into a divergent curve, and the correlation went to zero. This is not poor tuning; the map itself is unsafe under gradient training.</p>
+    <figure><img src="img/4-2-henon.png" alt="Hénon numerical divergence" loading="lazy">
+    <figcaption><span><b>Left</b>: the learned attractor (D2 = 0.36). The trajectory escapes from 0 to x ≈ −55,000; it no longer looks like an attractor. <b>Middle</b>: correlation (gap vs cos 0.609). The blue line (learned fractal shared-origin) is flat at 0, the correlation wiped out by the divergence. <b>Right</b>: training monitor. D2 falls from 0.95 to 0.6 and keeps dropping, with no sign of convergence.</span></figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>Attempt 2: the baker map</summary>
+  <div class="in">
+    <p>Construction of the <button type="button" class="term" data-g="baker">baker map</button> (a bounded dissipative baker map): the whole space is confined to the unit cube [0,1]³. The x coordinate is doubled and stretched (×2 mod 1, which can never leave [0,1)), and depending on whether x lands in the left or right half, the y and z coordinates are compressed into two narrow bands with a permanent gap between them. Nesting that gap again and again weaves a Cantor set (a measure-zero fractal) in the y and z directions. The map is bounded everywhere, so it cannot repeat Hénon’s divergence. The compression ratio a is fixed at 0.42 (not learned by the PINN) to prevent cheating: if it were learnable, the easiest solution would be to turn compression off and let the attractor fill the whole space again, which would no longer be a fractal. The theoretical fractal dimension is D2 ≈ 1 + 2·log2 / log(1/a) ≈ 2.6 (less than 3, confirming a true fractal). Everything stays bounded and no divergence occurs.</p>
+    <figure><img src="img/4-2-baker-attractor.png" alt="3D baker attractor" loading="lazy">
+    <figcaption>The 3D baker attractor: a scatter of 25,000 points does not fill the cube but gathers into structured sheets and bands, as a fractal attractor should. The measured D2 = 1.55 &lt; 3, “thinner” than the theoretical 2.6.</figcaption></figure>
+    <figure><img src="img/4-2-baker-corr.png" alt="Correlation on the 3D fractal" loading="lazy">
+    <figcaption>The correlation learned on the 3D fractal (blue) closely follows the quantum −cos (red dashed) and clearly departs from the triangle wave (grey dotted); the gap vs cos is only 0.032.</figcaption></figure>
+    <figure><img src="img/4-2-baker-monitor.png" alt="Training monitor on the 3D fractal" loading="lazy">
+    <figcaption>Training monitor: the green line (D2) stays between 1.5 and 1.9 throughout, never approaching the space-filling line (3) nor collapsing to a line (&lt; 1.1). The red line (gap vs cos) falls during training and settles low.</figcaption></figure>
+    <p><b>Final result:</b> are both goals (keep the fractal + produce cos) met at once? Looking at the three figures together (attractor shape, correlation shape, and fractal dimension throughout training), keeping the fractal and matching cos are achieved simultaneously, not by trading one for the other.</p>
+  </div>
+  </details>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>cos is constrained by the fractal geometry: only 3 of 5 random seeds reach the target (not robust). The curve-reproduction lower bound is about 4.6× Hall, more expensive than the shared-origin line (about 2× / 1.2×).</p></div>
+</article>
+
+<div class="summary"><span class="k">Stage summary</span>All four hard properties appear together for the first time, but “fractal” and “readable formula / differentiable” still live in different models. The fractal comes from hard-built baker geometry with no readable formula; symbolic regression has readable formulas but no fractal. The deadlock is not yet broken.</div>
+</div>
+</details>
+
+<!-- ================= STAGE 5 ================= -->
+<details class="stage" id="s5" open>
+<summary><span class="snum">5</span><span class="stitle">Root-level attack · zero hand design</span><span class="chev">▸</span><span class="ssub">Readable formulas → end-to-end emergence</span></summary>
+<div class="sbody">
+<div class="prose"><p>This stage first uses two root-level approaches to look for readable dynamical formulas, then directly breaks the deadlock exposed in Stage 4, and finally lets every component of the model (the dynamics f, the readout map R, and both measurement directions) emerge from scratch, approaching zero hand design.</p></div>
+
+<article class="step">
+  <div class="step-h"><span class="n">5.1</span><h3>Symbolic regression finds a readable formula</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>A self-built genetic-algorithm engine (expression trees) searches directly for <b>readable analytic expressions</b> instead of training an unreadable black box like a PINN. The goal is to see what mathematical structure cos actually comes from. The engine was first calibrated on a known answer (it exactly recovered sin(x0) + x1/2) before going further. The path was not smooth: the criterion was broken several times in a row, each break forcing a stricter criterion, until the search reliably found a real formula.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>Found the readable formula f = cos(x)·sin(x); 5/5 seeds meet the target, and 3 independent starting points converge to the same solution.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>The y/z dimensions use a fixed base and are not fractal. This complements 4.2 (formula without fractal, versus fractal without formula).</p></div>
+
+  <details class="sub">
+  <summary>① Framework 1 · searching the distribution ρ(λ | θ): the criterion gets gamed</summary>
+  <div class="in">
+    <p>The first search asked: given measurement angle θ, what conditional distribution should λ follow so the correlation matches −cos? The first criterion only checked whether the curve looks like cos, and was gamed immediately. It found w = cos(2λ), a solution <b>completely independent of θ</b> (measurement-dependence cost I(λ; θ) = 0) that still forced a cos shape. That is a numerical coincidence, not a real mechanism, and it directly violates Hall’s lower bound (reproducing −cos cannot be free in theory).</p>
+    <p>Lesson: checking the shape is not enough; the cost must also be reasonable. After adding a gate requiring the cost to be near Hall’s value and searching again, the real solution appeared: w ∝ sin²(λ)/g(θ), with cost 0.0672 bit, almost exactly at Hall’s lower bound of 0.0663.</p>
+    <figure><img src="img/5-1-f1.png" alt="Framework 1: searching the distribution" loading="lazy">
+    <figcaption><b>Left</b>: the red line (the real solution found by symbolic regression) fits the black target (quantum −cos) much better than the grey-green line (a known wrong formula, w = 1 + cos(λ − θ)); the gap drops from 0.137 to 0.023. <b>Right</b>: heat map of the found weight w(λ, θ), corresponding to the readable expression (−0.932 / (tanh(tanh(x1)) / sin²(x0))); it has clear structure, not random noise.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② Framework 2 · searching the measurement function: a deeper problem with the criterion</summary>
+  <div class="in">
+    <p>Next, the measurement-function branch: fix measurement independence (λ’s distribution does not depend on θ) and search for a measurement function B(λ, θ) that produces a cos correlation. A false alarm followed: a single E(θ) curve was again fitted to a cos shape (gap vs cos only 0.035).</p>
+    <p>This time the problem was deeper: not a cheating search, but <b>the wrong criterion</b>. Under measurement independence the model reduces to a purely classical, local model, and local models can imitate a single curve without violating any Bell-type theorem. A criterion that can actually prove non-classicality must be <button type="button" class="term" data-g="chsh">CHSH</button> (the four-point combination of two settings each for Alice and Bob); looking at one curve will always be fooled. This diagnosis decided that the next step had to change the criterion.</p>
+    <figure><img src="img/5-1-f2.png" alt="Framework 2: searching the measurement function" loading="lazy">
+    <figcaption>The measurement functions found in two independent experiments (measurement independence vs a setting-dependent distribution) both bring a single E(θ) close to −cos (gap 0.035 / 0.036). Both searches “succeeded” under entirely different premises, which shows the criterion cannot tell real from fake and must be replaced with a stricter one.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ Framework 3 · searching the dynamics f: the criterion was broken three times before it held</summary>
+  <div class="in">
+    <p>This is the hardest layer: instead of the distribution or the measurement function, search for the lowest-level dynamical rule f(λ) itself. This line went through three versions.</p>
+    <p><b>v1 (a home-made CHSH sampling criterion):</b> it found a solution with S = 3.40, apparently “breaking” the quantum limit 2√2 ≈ 2.828. That is not good news. Reproducing real quantum mechanics cannot exceed Tsirelson’s bound, so exceeding it means cheating. A review found that the distribution was secretly “seeing” the joint information of both Alice’s and Bob’s settings (signaling), which is physically forbidden. Discarded.</p>
+    <figure><img src="img/5-1-f3v1.png" alt="Framework 3 v1" loading="lazy">
+    <figcaption>Right: the found dynamics (red) reads CHSH S = 3.40, far above the quantum limit 2.828 (green dashed). The number itself is a red flag. The left correlation curve also jumps around and is not smooth, further evidence of a fake solution that gamed the criterion rather than a real reproduction of quantum correlations.</figcaption></figure>
+    <p><b>v2 (shared-origin rebuild):</b> learning from that, switch to exactly the Stage 4 shared-origin idea: a circle map containing no setting information, with Alice’s and Bob’s settings and λ all read out from different points of one trajectory, plus a hard no-signaling gate. This time CHSH read exactly S = 2.83 (the quantum limit) with a no-signaling deviation of only 0.017. It looked perfect, <b>but that was the new loophole</b>: CHSH only checks four specific angle combinations, and the search learned to please just those four points.</p>
+    <figure><img src="img/5-1-f3v2.png" alt="Framework 3 v2" loading="lazy">
+    <figcaption>Left: CHSH lands exactly on the quantum limit. <b>Right</b>: spread out as a full-angle curve, the red line jumps like a staircase near Δ ≈ 95°, nothing like a smooth −cos. This is four-point overfitting: it pleases only the points the criterion checks, and the rest of the curve is wrong.</figcaption></figure>
+    <p><b>v3 (final: change the criterion instead of patching again):</b> rather than invent another criterion, reuse the one already repeatedly validated and naturally cheat-resistant in the Stage 4 fractal work (4.2): the shared-origin structure itself guarantees no-signaling, plus a <b>full-angle gap</b> (the whole curve must match −cos, not just a few points). The 1D version found gap = 0.101 (still not good enough); upgraded to 3D, a single search found gap = 0.047, a clear improvement.</p>
+    <figure><img src="img/5-1-f3v3.png" alt="Framework 3 v3 final 3D" loading="lazy">
+    <figcaption>The 3D version found fx = |cos(x·tanh x)| in a single search. Its correlation curve (red) closely follows the quantum target (black dashed) throughout, gap vs cos only 0.047. With the new criterion, a formula with a trustworthy shape was finally found, but this is still a single result whose stability has not been checked.</figcaption></figure>
+    <figure><img src="img/5-1-multiseed.png" alt="Multi-seed confirmation of the 3D symbolic formula" loading="lazy">
+    <figcaption><b>Left</b>: 5 independent search seeds (s0–s4), each re-measured over several ensembles (mean ± std). All are far below the 0.08 threshold (red dashed); s1, s2 and s4 are very close (≈ 0.026). <b>5/5 pass.</b> <b>Right</b>: the best seed (seed 1) found the formula <b>f(x0) = cos(x0)·sin(x0)</b>, gap = 0.026; the green line almost exactly overlays the black quantum target and clearly departs from the grey triangle wave.</figcaption></figure>
+    <p><b>Final result:</b> the Stage 4 fractal work had already shown that a single-seed result can be luck (best seed 0.011, another seed 0.136). So the single v3 result was not trusted directly. Five independent search seeds were run, each re-measured over several ensembles; that is the verification behind the “5/5 seeds pass” in the key result. Three versions of the criterion (home-made CHSH → shared-origin rebuild still overfitting four points → reuse of the validated 4.2 criterion) were needed to find one that held. It is the same logic as the project’s rules: calibrate first, never trust a single run, and check the code when a result looks too good.</p>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">5.2</span><h3>Koopman spectral method</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Use the <button type="button" class="term" data-g="koopman">Koopman</button> spectrum to compute the invariant measure directly (the leading eigenvector), which can handle singular or fractal measures without a differentiable rule.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>The engine works and can compute singular measures, but three setting-dependent versions all failed to produce cos.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>An honest negative result: spectral methods excel at “given the dynamics, find the measure”, but the difficulty in producing cos lies in the <i>setting-dependent coupling structure</i>, which is not their strength. They are not a silver bullet.</p></div>
+
+  <details class="sub">
+  <summary>① Building and calibrating the engine: can a spectral method compute known measures without a differentiable rule?</summary>
+  <div class="in">
+    <p>The ultimate deadlock is that a true invariant-set fractal is non-differentiable everywhere, while both PINN and symbolic regression need a differentiable rule to train. Koopman (transfer operator / Perron–Frobenius operator) offers a side route. Instead of tracking specific chaotic trajectories, it studies the spectrum of the linear operator that pushes a probability distribution forward one step. The invariant measure is the eigenvector for eigenvalue 1. In principle this does not need a differentiable rule, and fractal or singular measures can be found directly as eigenvectors, possibly sidestepping the deadlock.</p>
+    <p>Method: discretize state space into N cells, sample points to estimate where each cell lands after one step, build the transition (Markov) matrix, and use an eigendecomposition to take the eigenvector with eigenvalue closest to 1 as the invariant measure. No training, no gradients, no divergence. Following “calibrate first”, it was tested on two problems with analytic answers: anchor A (an irrational rotation) should give a uniform measure, and anchor B (the logistic map f = 4x(1−x)) should give the analytic arcsine measure.</p>
+    <figure><img src="img/5-2-koopman-cal.png" alt="Koopman engine calibration" loading="lazy">
+    <figcaption><b>Left</b>: the spectral measure for the logistic map (blue) against the theoretical arcsine density (red dashed): correlation 0.96 in the middle, and both diverge at the ends, a match. <b>Right</b>: eigenvalues of the transition matrix; the leading eigenvalue sits exactly at 1 (red star), corresponding to the invariant measure. Both calibrations pass, confirming that the spectral method computes known measures without a differentiable rule, something neither PINN nor symbolic regression can do.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② Three setting-dependent attempts, all stuck near the triangle wave</summary>
+  <div class="in">
+    <p>With the engine calibrated, it was connected to a setting-dependent structure: the transfer operator itself depends on the angle θ (written L<sub>θ</sub>), the resulting invariant measure ρ<sub>θ</sub> varies with θ, and a sign measurement reads out E(θ) to see whether it matches the quantum −cos(θ). Three attempts:</p>
+    <p><b>v1 · smooth shift:</b> add a single-peaked smooth bias that shifts with θ to a base chaotic transfer operator. This repeated a pitfall already hit in Stage 4 (approach B, shared origin): shifting a smooth distribution changes strength but not shape. The result stuck near the triangle wave, gap vs cos about 0.135, essentially no different from the triangle-wave baseline (about 0.14).</p>
+    <p><b>v2 · second-harmonic modulation:</b> learning from v1, use a second-harmonic bias (containing cos(2(λ − θ/2))) so that the invariant measure’s shape, not just its strength, changes with θ. Sweeping the bias strength from 0 to 4 did push the cost I(λ; θ) very high (up to 0.69 bit, far above Hall’s 0.0663), but the gap vs cos did not shrink and even grew: more cost, no cos shape.</p>
+    <figure><img src="img/5-2-koopman-v2.png" alt="Koopman v2 second harmonic" loading="lazy">
+    <figcaption><b>Left</b>: the correlation E(θ) (green) is slightly closer to quantum −cos (black dashed) than the θ-independent baseline (orange), but still clearly off and closer to the triangle wave (grey dashed). <b>Right</b>: heat map of ρ<sub>θ</sub>(λ) against θ; the measure does move, but its overall shape changes little.</figcaption></figure>
+    <p><b>v3 · moving a singular measure:</b> a different angle. Use a logistic-type transfer operator directly (its invariant measure is naturally singular, arcsine-shaped with diverging ends, close to fractal). First calibrate that the base measure is truly “sharp” (singularity index max/mean far above the uniform value of 1), then let θ move the phase of the spike. This came closest, with gap vs cos down to about 0.10, but still did not cross the cos threshold (0.08).</p>
+    <figure><img src="img/5-2-koopman-v3.png" alt="Koopman v3 singular measure" loading="lazy">
+    <figcaption><b>Left</b>: the correlation (green) is closer to quantum −cos (black dashed) than the first two versions, gap about 0.10, still not passing. <b>Right</b>: the invariant measure at different θ. All three curves (phase 0, 2.5, 4.5) are the same sharp single peak; only the peak’s position shifts with θ, and its shape does not change.</figcaption></figure>
+    <p><b>Final result:</b> compared with the real solution from symbolic regression framework 1, w ∝ sin²(λ)/g(θ), the key is not <b>moving the whole measure around</b> but <b>coupling the measure’s shape to θ in a specific way</b>. <b>Koopman is good at computing a measure for a given rule, not at sculpting this coupling structure</b>, which is exactly its limit, and why all three attempts ended the same way. <b>The engine itself succeeded</b> (it computes singular or fractal measures from the operator spectrum with no differentiable rule), but all three versions failed at producing cos, and this is recorded honestly as a negative result.</p>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">5.3</span><h3>Breaking the fractal vs differentiable deadlock</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Up to this point there were two partial successes that would not fit together: Stage 4 (4.2) had a true fractal but no readable formula, and Stage 5 symbolic regression had a readable formula but no fractal. This step puts both half-products into one model.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>The fractal comes from the dynamical structure and cos from the driving functions, so the two no longer exclude each other. The deadlock is broken.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>Step 1 immediately caught a floating-point death bug in the doubling map (mantissa exhaustion), fixed with a smooth perturbation and a guard.</p></div>
+
+  <details class="sub">
+  <summary>① What the deadlock is: two half-products that don’t fit together</summary>
+  <div class="in">
+    <p>Stage 4 fractal work (4.2): the attractor is a true fractal (D2 ≈ 1.84), but it relies on the baker map, a piecewise hard-coded compression rule with no readable analytic formula. Stage 5 symbolic regression: it found a readable formula f = cos(λ)·sin(λ), but the dynamics were an area-preserving torus map that does not contract; its attractor fills the whole space and is not a fractal.</p>
+    <p>On the surface the logic is: “a true invariant set = fractal = non-differentiable everywhere, and readable symbolic formulas have so far only been found on smooth, non-fractal foundations.” It sounds as if “readable” and “fractal” inherently conflict.</p>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② The key idea: the fractal comes from structure, readability from the driving functions</summary>
+  <div class="in">
+    <p>Do not chase “a non-differentiable symbolic expression”, which contradicts itself (symbolic expressions are usually smooth). Instead, separate “where the fractal comes from” and “where readability comes from”, and control them with two independent knobs. The structure has an <b>expanding dimension x</b> (multiplied by BX ≥ 2 each step, producing chaos) and two <b>contracting dimensions y and z</b> with contraction ratio a &lt; 1, whose direction of contraction is set by driving functions Sy and Sz that are to be searched.</p>
+    <p>As long as a &lt; 1, the measure in y and z collapses exponentially. <b>The fractal is guaranteed by the structure</b>, with no fine-tuning and no luck involved. Meanwhile Sy, Sz and the perturbation gx added to the expanding term are all <b>smooth symbolic expressions</b>, so they stay readable. Fractality comes from the geometry of contraction and readability from the driving functions, so by design the two no longer exclude each other.</p>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ Skeleton only, no cos search: two calibrations</summary>
+  <div class="in">
+    <p>Following the methodological rules, the cos search was not thrown in immediately. If a good result came out, it would be impossible to tell whether the fractal structure itself holds or the search got lucky. So the first step <b>only builds the skeleton and calibrates, without the cos target</b>: the driving functions are fixed smooth examples (not searched), and the only question is whether the structure is fractal.</p>
+    <p><b>Calibration A (is the tool accurate?)</b>: the D2 estimator must read ≈ 3 on a space-filling point cloud in a cube, or the tool cannot be trusted. <b>Calibration B (is the structure fractal?)</b>: sweep four contraction ratios a = 0.25 / 0.35 / 0.45 / 0.55 and check that every measured D2 is below 3 (fractal) and increases with a (weaker contraction, closer to space-filling, the monotonic relation theory predicts).</p>
+    <figure><img src="img/5-3-d2.png" alt="D2 calibration" loading="lazy">
+    <figcaption>All four contraction ratios (green bars = measured D2) are below the space-filling line (3, red dashed) and below the fractal threshold (2.8, orange dotted), and rise monotonically with a, following the trend of the grey bars (Cantor theory). The structure is a fractal, not a fluke.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>④ A real bug caught along the way: floating-point death</summary>
+  <div class="in">
+    <p>The first run hit “doubling-map floating-point death”. If the expanding term is the exact x′ = (2x) mod 1, each iteration loses one binary mantissa bit, and after about 52 steps x is ground down to exactly 0. This is not the trajectory truly contracting; it is an artifact of exhausted numerical precision, and it would distort the fractal-dimension measurement completely.</p>
+    <p>The fix: add a smooth perturbation gx(x) = 0.13·sin(2πx) to the expanding term, breaking the exact doubling that exhausts the mantissa, and add an “expanding-dimension guard” (the standard deviation of x must exceed 0.2) so any future collapse of this kind is caught automatically rather than by eye. Same logic as the project rule: calibrate first, and check the code when a result looks too good.</p>
+    <figure><img src="img/5-3-proj.png" alt="Attractor projections" loading="lazy">
+    <figcaption><b>Left (x–y projection)</b>: the contracting dimension y shows layered Cantor structure rather than a uniform smear. <b>Right (y–z projection)</b>: the two contracting dimensions form a Cantor × Cantor ring texture; it is visibly not a solid disk but countless nested rings, a fractal structure.</figcaption></figure>
+    <p><b>Outcome:</b> all four contraction ratios read D2 &lt; 2.8 and rise monotonically with a, the cube calibration passes, and the expanding-dimension guard passes. The fractality of this dissipative symbolic map is <b>built into the structure</b>, not luck, and the driving functions are smooth symbolic trees, so readability is preserved. <b>Fractal and readable hold at the same time for the first time</b>, and the deadlock is broken.</p>
+    <p>But this step only builds and validates the skeleton. The driving functions Sy, Sz and gx are still hand-given fixed examples; <b>driving functions that produce cos have not yet been searched</b>. That is the job of the next card, “three-in-one”: hand these driving functions to symbolic regression so that cos also emerges on this fractal-plus-readable skeleton.</p>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">5.4</span><h3>Three-in-one pinned down; readout R and directions also emerge</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>The previous step only built the skeleton and showed the fractal-plus-readable structure holds; the driving functions Sy, Sz and gx were still fixed hand examples. This step <b>hands them to symbolic regression</b>, aiming for a correlation that matches −cos while keeping the fractal. If it works, fractal, readable formula and cos appear together in one model for the first time, hence “three-in-one”. After that, two hard-coded parts remain: the <b>readout map R</b> from attractor state to observable, and the <b>measurement directions</b> chosen by Alice and Bob. This step hands those to symbolic regression too, approaching zero hand design.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>5/5 seeds robust (gap ≈ 0.018); the curve matches −cos; curve-reproduction lower bound ≈ 0.068 (Hall’s order of magnitude). The readout R emerges with 4/4 passing. After three rounds of structural diagnosis (shared hidden variable → spherical parameterization → amplitude-based CHSH), the two-sided directions give an effective CHSH ≈ 2.80.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>Step 4 caught a measurement degeneracy (P(A+) = 0.998, Alice’s measurement existing in name only) → a measurement-balance guard was added. Step 6 fixed an inflated single-point CHSH formula that produced a false “beyond-Tsirelson 3.11”.</p></div>
+
+  <details class="sub">
+  <summary>① Step 2: hand the driving functions to symbolic regression, with three anti-cheating guards</summary>
+  <div class="in">
+    <p>Only one tree Sy is searched; Sz is forced to be its mirror (Sz = −Sy). This lowers the search dimension and naturally makes the two contracting directions y and z anti-phase. The fitness has <b>three anti-cheating guards</b>, all required: ① the criterion is the full-angle gap, not bare CHSH (the symbolic-regression line already learned that CHSH at four points gets fooled); ② a fractal guard D2 &lt; 2.6, preventing the search from quietly inflating the attractor back to space-filling to please the cos target and slipping back to “formula without fractal”; ③ an expanding-dimension guard x.std &gt; 0.2, preventing a repeat of the previous card’s floating-point death.</p>
+    <p>Before the real search, <b>the fitness itself was calibrated</b>: a hand-given driver that should produce cos (sin/cos type) and one that should only give a trivial result (a constant) must score clearly differently. Only once the criterion was trustworthy was the search scaled up.</p>
+    <figure><img src="img/5-4-step2.png" alt="Step 2: searching cos-producing drivers" loading="lazy">
+    <figcaption><b>Left</b>: the correlation curves of 3 search seeds all clearly approach the black −cos target, while D2 stays in the fractal range. <b>Right</b>: the attractor projection of the best seed; the layered fractal structure is intact after the search. This is only a small ensemble of 3 seeds, not yet checked for cheating, and needs to be pinned down next.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② Step 3 (A): pinning down robustness with 5 × 5 seeds and ensembles</summary>
+  <div class="in">
+    <p>Step 2’s result came from a small ensemble of 3 seeds. To guard against a lucky single run and against fluctuation in the evaluation itself, the review was scaled up: 5 search seeds × 5 ensemble seeds each, 25 independent runs. All 5/5 passed, with the gap stable near 0.018, so the driving function from step 2 is not an isolated case.</p>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ Step 3 (B): a hard no-signaling test, and a real methodological bug caught here</summary>
+  <div class="in">
+    <p>The check: Alice’s readout distribution must not change when Bob chooses a different measurement direction. But a comment in the script admits that <b>the first version of the test was itself wrong</b>. It conditioned on Bob’s <b>measurement outcome</b> (the B = +1 subset) and then checked whether Alice’s distribution changed. A and B are correlated by design (that is where the cos correlation comes from!), so the measured “drift” was not signaling at all, only the correlation itself. The test mistook correlation for evidence of cheating.</p>
+    <p>The corrected method scans Bob’s <b>measurement direction</b> (not outcome), gives each direction its own fresh ensemble (to create real sampling noise and avoid fooling ourselves), and checks that Alice’s marginal P(A = +1) only fluctuates at the noise level. This is another error the project caught in its own “chronicle of measurement failures”. After the fix, the drift sits near the sampling-noise floor: pass.</p>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>④ Step 3 (C): cost check, ruling out information-level cheating</summary>
+  <div class="in">
+    <p>Reuse the convex-optimization LP already calibrated in an earlier stage (fed the ideal −cos, it must read ≥ 0.066 bit, confirming the ruler is not broken) to compute the measurement-dependence cost this solution pays. A cost near 0 with a cos shape would suggest cheating (via signaling or some degenerate solution); a cost near Hall’s order of magnitude indicates an honest superdeterministic solution. Result: the curve-reproduction lower bound is ≈ 0.068, the same order as Hall’s 0.0663: pass.</p>
+    <figure><img src="img/5-4-step3.png" alt="Step 3: robustness, no-signaling and cost checks" loading="lazy">
+    <figcaption>Three-sided review. <b>Left</b>: 5 × 5 seed-and-ensemble robustness, gap stable below the threshold. <b>Middle</b>: no-signaling, Alice’s marginal drift with Bob’s direction stays within the noise floor. <b>Right</b>: cost check, curve-reproduction lower bound ≈ 0.068, close to Hall’s bound, so the cos shape was not bought by cheating.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>⑤ Step 4: the readout map R emerges, and a real “measurement degeneracy” bug is caught</summary>
+  <div class="in">
+    <p>With the pinned-down dynamics fixed (Sy = 2.48·x0), only the readout is searched: one “component generator” tree, cyclically shifted over variables (x → y → z) to produce Rx, Ry and Rz, which lowers the dimension and keeps the structure symmetric. Calibration first: a hand-written readout (a known good solution) must have a low gap, and a degenerate constant readout must have a high gap, so the evaluation distinguishes good from bad before the search is opened up.</p>
+    <p>The search did hit a problem. Scoring only the gap (does the curve look like cos), symbolic regression found a cheating solution: bias the readout toward one pole of the sphere so that <b>P(A = +1) ≈ 0.998</b>. Alice’s outcome is then almost constant, the cos correlation is carried by Bob alone, and Alice’s “measurement” exists in name only, not a real binary measurement. The fix was a <b>measurement-balance guard</b>: deviating from 50/50 by more than 0.1 is heavily penalized, forcing the search toward genuine binary measurements. After the fix, all 4 seeds pass (4/4) and the cost check also passes (≈ Hall).</p>
+    <figure><img src="img/5-4-step4.png" alt="Step 4: readout emerges" loading="lazy">
+    <figcaption><b>Left</b>: the gap of the emergent readout passes for all 4 search seeds (green bars). <b>Middle</b>: the correlation curve with the emergent readout (green) follows quantum −cos (black dashed). <b>Right</b>: cost check, the emergent readout’s cost is close to Hall’s bound, not obtained through signaling.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>⑥ Step 6: both measurement directions emerge, after three rounds of structural diagnosis fixing physics errors</summary>
+  <div class="in">
+    <p>The goal: even the directions Alice and Bob each choose should emerge from the shared-origin trajectory. This line hit three pitfalls in a row, each time because <b>the physical structure was wrong</b>, not because the search was too weak.</p>
+    <p><b>① Shared hidden variable:</b> the first version had Alice measure a vector vA at one time on the trajectory and Bob measure vB at another time (two different readout points). But x is the expanding chaotic dimension, and after a dozen or so iterations the two are fully decorrelated; chaos washes out the correlation between vA and vB. CHSH came out at only 0.17, an almost flat zero line. A true Bell scenario requires Alice and Bob to measure <b>the same shared hidden-variable state v(λ)</b>, each in a different direction. After switching to a shared v, the correlation reappeared.</p>
+    <p><b>② Spherical parameterization:</b> early versions locked the measurement direction to the equatorial plane (the z component unused), distorting the curve. The fix lets both the polar and azimuthal angles emerge over the <b>full sphere</b> (two trees search them separately), an unbiased configuration.</p>
+    <p><b>③ Amplitude-based CHSH, fixing a false “beyond-Tsirelson” criterion bug:</b> the earliest version used the crude single-point formula S = |3E(45°) − E(135°)|, which <b>amplifies any local error at 45° threefold</b>. The curve itself had a gap of only 0.022 (an almost perfect cos), yet the amplification made S read 3.1, apparently exceeding the quantum Tsirelson bound 2√2 ≈ 2.828. Believing it would have meant the model was signaling. The review found the problem was the formula itself. Switching to an amplitude fit of the whole curve (S_eff = 2√2·amp), which is not amplified by single-point noise, gave S ≈ 2.80: beyond the classical limit 2 but within Tsirelson, an honest result, not cheating. Another false positive caught on the spot by “check the code when a result looks too good”.</p>
+    <figure><img src="img/5-4-step6.png" alt="Step 6: two-sided shared-origin emergence" loading="lazy">
+    <figcaption><b>Left</b>: CHSH readings (amplitude method) for 4 search seeds, most between the classical limit 2 and the Tsirelson limit 2√2, the honest beyond-classical, not-beyond-quantum range. <b>Middle</b>: the correlation curve from two-sided spherical emergence follows quantum −cos. <b>Right</b>: no-signaling test, Alice’s marginal drift across ensembles stays within the noise floor band.</figcaption></figure>
+    <p><b>Final result:</b> fractal (D2 ≈ 1.72), readable formula (of the form Sy ∝ x0) and cos correlation hold together in one model for the first time, confirmed by 5/5 robustness, no-signaling and the cost check. On top of that, the readout map R (4/4 pass) and both measurement directions â / b̂ (after three rounds of structural diagnosis, effective CHSH ≈ 2.80, beyond classical but within Tsirelson) also emerge from the shared-origin trajectory. At this point, the only hand-set parts are “the target is to reproduce cos” and the anti-cheating guards; the dynamics f, readout R and both directions are all readable formulas found by symbolic regression, not fixed by hand.</p>
+    <p>Chained together, the three formulas form this progressively pinned-down and reused <b>formula chain</b>:</p>
+    <div class="formula">driving function   Sy = 2.48·x0          (Sz = −Sy)
+readout map        R  = cos(e²·tanh(x1)) (Rx/Ry/Rz by cyclic shift)
+Alice direction    polar ≈ 2.6, azimuth ≈ 0.034
+                   (best solution, seed 0: gap = 0.022, CHSH = 2.805)</div>
+    <p>The first two are nontrivial symbolic expressions, but the third (Alice’s direction) came out as <b>an almost constant offset angle</b>, not a complex function of the state. Across seeds (seed 1’s azimuth includes x2; the other seeds’ azimuths are small constants within ±2), the claim that “directions can emerge too” holds, but the emergent optimum is usually a simple near-fixed offset rather than an intricate state-dependent function. This is recorded as it is, without exaggeration.</p>
+  </div>
+  </details>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">5.5</span><h3>Fully end-to-end, zero hand design</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>Every earlier step was <b>fixed piece by piece</b>: three-in-one searched only f with readout and directions fixed; the readout step fixed f and searched only R; the direction step fixed f and R and searched only directions. This step leaves nothing fixed: <b>four symbolic trees (dynamics f, readout R, Alice’s polar angle, Alice’s azimuth) are packed into one chromosome</b> and evolved jointly in one pass. It is the closest attempt to zero hand design, and it also fills the gap that the previous direction step never verified cost.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>5/5 seeds pass. Each component’s formula differs between seeds, yet all converge to reproducing quantum −cos. The only human-set parts are the cos target and the anti-cheating guards.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>Tuning the readout sharpness can reach amp ≈ 0.96 with a curve-reproduction lower bound ≈ 0.064, close to Hall (a hard red-line guard confirms Hall’s theorem is not violated).</p></div>
+
+  <details class="sub">
+  <summary>① Calibration: assemble a known good answer to check the scoring separates good from bad</summary>
+  <div class="in">
+    <p>The search does not start empty-handed. The passing formulas found separately in earlier steps are first assembled by hand: f = 2.48·x0 (step 2), R = cos(e²·tanh(x1)) (step 4), Alice’s polar angle = 2·x0 (step 6), azimuth ≈ constant 0. This combination is fed to the joint scoring function, which must give it a low penalty and give an all-constant bad combination a high penalty. Only once the scoring can tell them apart is the search opened up.</p>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>② Joint search: all guards written into the fitness, four trees passing together</summary>
+  <div class="in">
+    <p>5 search seeds, each evolving 140 individuals for 45 generations. The penalty function binds every anti-cheating condition at once: a low curve gap (matches cos), D2 &lt; 2.6 (fractal), CHSH within (2, 2√2 + tolerance] (beyond classical but not beyond Tsirelson), and both Alice’s and Bob’s outcomes close to 50/50 (neither side degenerating to a constant). Any failure is heavily penalized, forcing the four trees to pass together rather than sacrificing one to satisfy another.</p>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>③ Final review: cost LP + no-signaling, closing the gap left by the previous step</summary>
+  <div class="in">
+    <p>For each seed’s best solution, two independent checks: ① the convex LP computes the information cost of the curve, which must be ≥ 0.04 (near Hall’s order, not pushed near 0 through signaling); ② Alice’s marginal drift is scanned over 8 independent ensembles and must stay within the sampling-noise floor, confirming no signaling.</p>
+    <figure><img src="img/5-5-step7.png" alt="Step 7: full end-to-end joint search" loading="lazy">
+    <figcaption><b>Left</b>: CHSH readings for all 5 search seeds pass (5/5), between the classical limit 2 and the Tsirelson limit 2√2. <b>Middle</b>: the correlation curve from the full end-to-end joint search (green) closely follows quantum −cos (black dashed). <b>Right</b>: cost review, the measured curve-reproduction lower bound is close to Hall’s bound, and the no-signaling drift stays within the noise floor.</figcaption></figure>
+  </div>
+  </details>
+
+  <details class="sub">
+  <summary>④ Results, and four honest boundaries the script lists itself</summary>
+  <div class="in">
+    <p>All 5 seeds pass every guard, and <b>each seed finds different formulas for f, R and the directions</b>, yet all converge on reproducing quantum −cos. So this is not memorizing one isolated solution; the structure itself admits many valid solutions.</p>
+    <p>The script’s own conclusion lists four boundaries, stated without hedging: <b>①</b> “CHSH ≈ 2.8” is converted from the curve amplitude (S = 2√2·amp), not a genuine four-angle independent Bell measurement, and says the same thing as the gap criterion, so they are not two independent pieces of evidence. <b>②</b> “Cost ≈ Hall” is the mathematical result of how much information this cos curve needs at minimum (Hall’s theorem). If the curve looks like cos, the cost is ≈ Hall by definition; the mechanism’s measurement dependence was not measured independently. <b>③</b> No-signaling is guaranteed by the model structure (Alice’s readout simply contains no information about Bob’s direction). The drift test checks that this guarantee is not broken numerically; it is a structural argument, not verification from scratch. <b>④</b> D2 &lt; 2.6 only sets an upper limit. Some seeds actually have D2 ≈ 1 (close to degenerating into a line), so the fractal richness is modest, though they still pass.</p>
+    <p><b>Final result:</b> the only human-set parts left are the target itself (reproduce −cos) and the specific thresholds of the anti-cheating guards. The dynamics f, the readout R, and the polar and azimuthal angles of Alice’s direction are all readable formulas found from scratch by symbolic regression, not fixed by hand. A later extension (step 8) tuned the readout “sharpness” to push the amplitude to ≈ 0.96 and the cost to ≈ 0.064, very close to Hall’s bound of 0.0663, with a <b>hard red-line guard</b>: if any run showed “amplitude ≈ 1 with cost below 0.0663”, that would physically violate Hall’s theorem, so it must be an algorithm error or cheating and must raise an alarm, never be celebrated as a breakthrough. This red-line guard confirmed the whole process never entered that forbidden zone.</p>
+  </div>
+  </details>
+</article>
+
+<div class="summary"><span class="k">Stage summary</span>On dissipative symbolic dynamics with a built-in fractal, readable f, R and two-sided directions were found end-to-end, reproducing the quantum −cos correlation and approaching zero hand design. The strength of this evidence must be strictly bounded; see Stage 6.</div>
+</div>
+</details>
+
+<!-- ================= STAGE 6 ================= -->
+<details class="stage" id="s6" open>
+<summary><span class="snum">6</span><span class="stitle">Rigor · project-wide audit</span><span class="chev">▸</span><span class="ssub">Calibrate first / prevent cheating / self-correct</span></summary>
+<div class="sbody">
+<div class="prose"><p>The closer research gets to “success”, the more it must guard against self-deception. This stage is the integrity guarantee of the whole project: a running chronicle of measurement failures, and a code audit covering all 120 files, followed by proactively downgrading places where the wording was stronger than the evidence.</p></div>
+
+<article class="step">
+  <div class="step-h"><span class="n">6.1</span><h3>Chronicle of measurement failures · 11 cases</h3></div>
+  <div class="lab"><span class="k">Cases</span><p>Signaling cheats (shared trajectory points, S = 2.776; dependence on relative angle, S = 3.4), a CHSH angle bug, single-curve overfitting, cos(2λ)-type sign cheating (I = 0 fake cos), D2 estimator underestimation, doubling-map floating-point death, measurement degeneracy P(A+) = 0.998, no-signaling conditioned in the wrong direction, an inflated single-point CHSH formula (a false beyond-Tsirelson 3.11)…</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>Every one was caught on the spot and discarded through the discipline of “calibrate first / multiple seeds / check the code when a result looks too good”. None entered the final conclusions.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>This list is evidence of rigor, not a stain.</p></div>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">6.2</span><h3>Project-wide code audit</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>A parallel audit of all 120 files and 18,040 lines (7 audit units, reading every file), looking specifically for correctness bugs, cheating patterns, measurement failures, and whether each conclusion is supported by the code.</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>No data fabrication, no signaling false positives, no false “beyond Tsirelson”, no false “beating Hall”: no false conclusion entered the final conclusions. In the per-stage ratings, the foundations and the cost curve are the most solid; overall B to B+.</p></div>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">6.3</span><h3>Honest downgrades · strict boundaries</h3></div>
+  <div class="lab"><span class="k">Approach</span><p>What the audit caught was over-interpretation, not fabrication. The downgrades, stated as they are:</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>① “Cost ≈ Hall” is the theoretical minimum mutual information for reproducing the correlation curve (Hall’s theorem itself: if the curve is cos, it must be ≈ Hall), not evidence that the mechanism’s true I(setting; λ) is efficient. ② “CHSH = 2.80” is an amplitude conversion S = 2√2·amp, not a four-angle independent Bell measurement. ③ “No-signaling” is guaranteed by structure, not confirmed by measurement.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>The main document’s overclaims have been corrected accordingly (“0.046 = Hall”, old D2 values, calling 3/5 “robust”, and similar wording).</p></div>
+</article>
+
+<article class="step">
+  <div class="step-h"><span class="n">6.4</span><h3>Genuinely open problems (not bugs; they need new work)</h3></div>
+  <div class="lab"><span class="k">What is still unsolved</span><p>An honest list of what this research has not solved:</p></div>
+  <div class="lab res"><span class="k">Key result</span><p>The mechanism’s true I(setting; λ) has never been measured reliably and directly (high-dimensional mutual-information estimation is a real tooling wall). “Curve-reproduction lower bound ≈ Hall” ≠ “the mechanism reaches the bound in information efficiency” (unproven). Stable passing of cos (5/5) and an amplitude of exactly 1 remain open.</p></div>
+  <div class="lab bnd"><span class="k">Honest boundary</span><p>These are the honest endpoint of this research and the starting point of the next.</p></div>
+</article>
+
+<div class="summary"><span class="k">Stage summary</span>A research record that invites a code audit on itself and corrects its own overclaims accordingly; that is itself part of scientific rigor. The core open problem, “the rule that fits the universe”, remains unsolved, and the research continues.</div>
+</div>
+</details>
+
+<!-- ================= BOARD ================= -->
+<section class="block" id="board">
+  <h2>Where the research stands</h2>
+  <div class="board">
+    <div><span class="k">What was built</span><p>A prototype-level <b>differentiable invariant-set surrogate</b>. On dissipative symbolic dynamics with a built-in fractal (measure zero), readable dynamics f, readout R and two-sided measurement directions were found end-to-end, reproducing the quantum −cos correlation. The theoretical minimum measurement dependence of its correlation curve agrees with Hall’s bound, and no-signaling holds by structure.</p></div>
+    <div class="b"><span class="k">Strict boundaries</span><p>“Cost ≈ Hall” is the curve-reproduction lower bound (≠ the mechanism’s true mutual information). “CHSH ≈ 2.80” is converted from curve amplitude (not an independent Bell measurement). The mechanism’s true I(setting; λ) has <b>never been measured directly</b> because of the tooling wall in high-dimensional mutual-information estimation. This is the honest endpoint of the research, and the next stop.</p></div>
+  </div>
+</section>
+
+<!-- ================= REFS ================= -->
+<section class="block refs" id="refs">
+  <h2>References and theoretical sources</h2>
+
+  <h3>Stage 1 · Origins: EPR, Bell’s theorem and superdeterminism</h3>
+  <ul>
+    <li><span class="tag lit">Paper</span><span>A. Einstein, B. Podolsky, N. Rosen, <a href="https://doi.org/10.1103/PhysRev.47.777" target="_blank" rel="noopener"><i>Can Quantum-Mechanical Description of Physical Reality Be Considered Complete?</i></a>, Phys. Rev. 47, 777 (1935). The original EPR paper.</span></li>
+    <li><span class="tag lit">Paper</span><span>J. S. Bell, <a href="https://doi.org/10.1103/PhysicsPhysiqueFizika.1.195" target="_blank" rel="noopener"><i>On the Einstein Podolsky Rosen Paradox</i></a>, Physics 1, 195 (1964). The original Bell inequality paper.</span></li>
+    <li><span class="tag lit">Paper</span><span>J. F. Clauser, M. A. Horne, A. Shimony, R. A. Holt (CHSH), <a href="https://doi.org/10.1103/PhysRevLett.23.880" target="_blank" rel="noopener"><i>Proposed Experiment to Test Local Hidden-Variable Theories</i></a>, Phys. Rev. Lett. 23, 880 (1969). The CHSH inequality, the testable form of Bell’s inequality.</span></li>
+    <li><span class="tag lit">Book</span><span>P. C. W. Davies &amp; J. R. Brown (eds.), <a href="https://www.cambridge.org/9780521457286" target="_blank" rel="noopener"><i>The Ghost in the Atom</i></a>, Cambridge Univ. Press (1986). Contains Bell’s 1985 interview describing the superdeterministic way out.</span></li>
+    <li><span class="tag">Concept</span><span>B. S. Tsirelson, the upper bound on quantum correlations S ≤ 2√2 ≈ 2.828 (Tsirelson’s bound, 1980).</span></li>
+    <li><span class="tag">Concept</span><span>Measurement independence (statistical independence / free-choice assumption): the implicit premise of Bell’s theorem, and what superdeterminism gives up.</span></li>
+  </ul>
+
+  <h3>Throughout · The three superdeterministic models</h3>
+  <ul>
+    <li><span class="tag lit">Paper</span><span>T. N. Palmer, <a href="https://doi.org/10.1098/rspa.2009.0080" target="_blank" rel="noopener"><i>The Invariant Set Postulate: a new geometric framework for the foundations of quantum theory</i></a>, Proc. R. Soc. A 465, 3165 (2009). Invariant-set theory (★ used in this research).</span></li>
+    <li><span class="tag lit">Book</span><span>G. ’t Hooft, <a href="https://doi.org/10.1007/978-3-319-41285-6" target="_blank" rel="noopener"><i>The Cellular Automaton Interpretation of Quantum Mechanics</i></a>, Springer (2016). The cellular-automaton interpretation.</span></li>
+    <li><span class="tag lit">Paper</span><span>S. Hossenfelder &amp; T. Palmer, <a href="https://doi.org/10.3389/fphy.2020.00139" target="_blank" rel="noopener"><i>Rethinking Superdeterminism</i></a>, Front. Phys. 8, 139 (2020). The general superdeterminism framework, including a reply to the fine-tuning / conspiracy charge.</span></li>
+    <li><span class="tag lit">Paper</span><span>C. Wood &amp; R. Spekkens, <a href="https://doi.org/10.1088/1367-2630/17/3/033002" target="_blank" rel="noopener"><i>The lesson of causal discovery algorithms for quantum correlations…</i></a>, New J. Phys. 17, 033002 (2015). The representative statement of the fine-tuning critique.</span></li>
+  </ul>
+
+  <h3>Stage 2 · Differentiable surrogates and measurement tools</h3>
+  <ul>
+    <li><span class="tag">Concept</span><span>Koopman operator / transfer operator (Perron–Frobenius) spectral methods: computing invariant measures from the spectrum of a linear operator.</span></li>
+    <li><span class="tag">Concept</span><span>Lyapunov exponents: the basic quantity for orbit contraction and expansion, used to identify attractors and fractal dimension.</span></li>
+    <li><span class="tag">Concept</span><span>Convex optimization / linear programming (solved with cvxpy): the minimum measurement-dependence cost (a KL lower bound) for a given correlation curve.</span></li>
+    <li><span class="tag">Concept</span><span>The arcsine distribution μ(x) = 1/(π√(x(1−x))): the analytic invariant measure of the r = 4 logistic map, used as a calibration ground truth.</span></li>
+  </ul>
+
+  <h3>Stage 3 · Reproduction, extension and generation</h3>
+  <ul>
+    <li><span class="tag lit">Paper</span><span>M. J. W. Hall, <a href="https://doi.org/10.1103/PhysRevLett.105.250404" target="_blank" rel="noopener"><i>Local Deterministic Model of Singlet State Correlations…</i></a>, Phys. Rev. Lett. 105, 250404 (2010), and <a href="https://doi.org/10.1103/PhysRevA.84.022102" target="_blank" rel="noopener"><i>Relaxed Bell inequalities…</i></a>, Phys. Rev. A 84, 022102 (2011). The minimum measurement-dependence bound of 0.0663 bit for the singlet −cos (the project’s theoretical anchor).</span></li>
+    <li><span class="tag">Concept</span><span>The CGLMP inequality (high-dimensional qudits), GHZ states and the Mermin inequality (many bodies), the PR-box (beyond-quantum no-signaling correlations): the standard scenarios for the four extensions in Stage 3.</span></li>
+    <li><span class="tag">Concept</span><span>The Bloch sphere + Fibonacci uniform sphere sampling: the geometric construction for the full-angle singlet reproduction on the sphere.</span></li>
+  </ul>
+
+  <h3>Stages 4 and 5 · Fractals, shared origin and symbolic dynamics</h3>
+  <ul>
+    <li><span class="tag">Concept</span><span>The dissipative baker map / Hénon map: dynamical constructions that compress an attractor into a measure-zero, Cantor-type fractal.</span></li>
+    <li><span class="tag">Concept</span><span>Correlation dimension D2 (Grassberger–Procaccia estimator): the measure used to decide whether an attractor is fractal.</span></li>
+    <li><span class="tag">Concept</span><span>Symbolic regression / genetic algorithms (expression trees): self-built, to search for readable dynamical formulas that produce cos correlations.</span></li>
+    <li><span class="tag">Concept</span><span>PINN (physics-informed neural network): a differentiable framework that writes physical constraints into the loss and solves for rules by gradient optimization.</span></li>
+  </ul>
+
+  <h3>Stage 6 · Audit and honest boundaries</h3>
+  <ul>
+    <li><span class="tag">Concept</span><span>The no-signaling condition: a floor shared by quantum mechanics and relativity, used throughout as the red line against cheating.</span></li>
+    <li><span class="tag">Concept</span><span>Mutual information I(λ; setting) and KL divergence: the information-theoretic tools that quantify the “cost” of measurement dependence. This research strictly separates the curve-reproduction lower bound from the mechanism’s true mutual information.</span></li>
+  </ul>
+  <p style="margin-top:16px;color:var(--muted);font-size:.9rem">Items marked <b>Paper</b> or <b>Book</b> are verifiable published works; <b>the title is a link</b> to the publisher’s page (all checked through the DOI resolver). Items marked <b>Concept</b> are standard theories, methods or mathematical objects used in this research, common tools in the field rather than one specific paper.</p>
+</section>
+</main>
+
+<footer>Coralyn Wu · coralynwu2008@g.ucla.edu · Superdeterminism research project · six-stage research archive · 2026/07 · Figures generated by project scripts; content checked by a project-wide code audit.</footer>
+
+<dialog id="gloss" aria-labelledby="glossT">
+  <div class="dlg-h"><h3 id="glossT"></h3><button type="button" class="x" data-close aria-label="Close">×</button></div>
+  <div class="dlg-b" id="glossB"></div>
+</dialog>
+<dialog id="lb" class="lb" aria-label="Figure">
+  <div class="dlg-h"><span class="eyebrow">Figure</span><button type="button" class="x" data-close aria-label="Close">×</button></div>
+  <img id="lbimg" alt="">
+</dialog>
+
+<script>
+var G = {
+bell:["Bell inequality",`<p>Bell’s inequality (1964) is the upper limit on correlations that any local hidden-variable theory must obey. Its most common testable form is the CHSH inequality:</p><pre>S = | E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′) | ≤ 2</pre><p>Here a and a′ are Alice’s two measurement directions, and b and b′ are Bob’s.</p><p><b>What is E?</b> E(a,b) is the correlation value. Alice measures along a and Bob along b many times; each outcome is +1 or −1. <b>Multiply</b> the two outcomes each round and average to get E(a,b).</p><p>· E = +1: the outcomes always agree (both +1 or both −1), perfect positive correlation;<br>· E = −1: the outcomes are always opposite, perfect negative correlation;<br>· E = 0: no correlation (half agree, half differ).</p><p>So E measures how synchronized the two sites are, between −1 and +1.</p><p>Any theory with locality + realism + measurement independence must have S ≤ 2, while quantum mechanics predicts S can reach 2√2 ≈ 2.828 (Tsirelson’s bound). Any experiment with S &gt; 2 therefore proves at least one of these premises is wrong. That is the power of Bell’s inequality: it turns a philosophical debate into a decidable experiment.</p>`],
+chsh:["CHSH",`<p>CHSH is the most practical version of Bell’s inequality, named after Clauser, Horne, Shimony and Holt (1969).</p><p>Procedure: Alice and Bob each randomly choose one of two measurement directions (Alice: a or a′; Bob: b or b′) and each get ±1. The correlation E is computed for each of the four setting combinations and combined into S = |E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′)|.</p><p>· Classical (local hidden variables): S ≤ 2<br>· Quantum (Tsirelson’s bound): S ≤ 2√2 ≈ 2.828</p><p>Throughout this research, the CHSH value S is the physical yardstick for “beyond classical” and “cheating”; the standard optimal angles are (0°, 90°, 45°, −45°).</p>`],
+singlet:["Fully reproducing the singlet correlation",`<p>The singlet is the most commonly used maximally entangled state. In a Bell experiment with angle θ between the two measurement directions, the average of the product of outcomes (the correlation) is:</p><pre>E(θ) = −cos(θ)</pre><p>This curve is an exact prediction of quantum mechanics: perfect anti-correlation (−1) at 0°, no correlation (0) at 90°, perfect correlation (+1) at 180°.</p><p>“Fully reproducing” means matching the whole −cos(θ) curve at <b>every angle θ</b>, not just a few. That is much stricter than producing a high CHSH value (four angles). Many cheating models can hit a few points but not the whole curve. Hall (2011) proved, for full reproduction of −cos, that the required measurement-dependence mutual information I(λ; setting) ≥ 0.0663 bit.</p>`],
+ist:["Invariant-set theory",`<p>Invariant Set Theory is a superdeterministic approach proposed by the British physicist Tim Palmer. It attributes the strangeness of quantum mechanics to the evolution of the universe being confined to a special geometric object in state space.</p><p><b>Core picture.</b> Imagine all possible states of the universe forming a high-dimensional state space. Palmer argues that the real history of the universe cannot visit every point of this space; it always lies on an invariant set I<sub>U</sub> within it. I<sub>U</sub> has three key properties:</p><p><b>Property 1 · What an invariant set (and an attractor) is.</b> Think of the universe’s evolution as a map from the current state to the next. If every point of a set stays in the set after evolving and never leaves, the set is an invariant set of the dynamics. An attractor is the most important kind: orbits starting nearby are drawn in over time and end up on it. Stir a glass of water and let it settle; the long-run flow settles into certain fixed patterns, which are attractors. The universe lying on I<sub>U</sub> means its history is an attractor of the dynamics, staying on I<sub>U</sub> automatically and stably, with no one fine-tuning it.</p><p><b>Property 2 · What measure zero means.</b> Measure can be read as “volume” or “share”. Measure zero means the set occupies zero volume in state space, like a sheet of paper (a 2D surface) in 3D space, or a line in a plane. The counterintuitive but crucial consequence: pick a state in state space “at random” and it is almost certainly not on I<sub>U</sub> (the probability of landing on a zero-volume set is 0). This is the crux of how superdeterminism sidesteps Bell: most universe states corresponding to measurement settings “you think you could freely choose” are not on I<sub>U</sub> and are physically impossible.</p><p><b>Property 3 · What a fractal is.</b> A fractal is self-similar and infinitely fine: magnify it any amount and you see structure resembling the whole, never a smooth edge (think coastlines, snowflakes, cauliflower). A fractal’s dimension is usually not an integer, e.g. 1.26 or 2.7: fatter than a line, thinner than a surface. Palmer requires I<sub>U</sub> to be fractal because only such a measure-zero yet infinitely complex structure can both occupy zero volume (property 2) and hold the richness of every possible history of the universe. But a fractal is nowhere smooth and nowhere differentiable, which clashes directly with a PINN that needs differentiability to optimize, forming the project’s hardest deadlock.</p><p><b>How it sidesteps Bell’s theorem.</b> The proof of Bell’s theorem assumes measurement settings can be chosen freely and independently (measurement independence: λ is unrelated to the settings). In invariant-set theory, the settings and the measured particles belong to the same constrained cosmic trajectory, both confined by I<sub>U</sub>. They come from the same geometric object, so λ and the settings are <b>naturally correlated, not independent</b>. That violates measurement independence; with the premise removed, Bell’s derivation fails, and quantum correlations can exceed the classical bound with no action at a distance.</p><p><b>How it answers the fine-tuning / conspiracy charge.</b> The most common criticism of superdeterminism is that making the correlation between hidden variables and settings reproduce quantum predictions exactly seems to require initial conditions tuned to a conspiratorial degree (Wood &amp; Spekkens, 2015). Palmer’s answer is geometric: the correlation <b>is not tuned by anyone</b>; it is the automatic result of the geometric constraint that the universe lies on the fractal invariant set I<sub>U</sub>. I<sub>U</sub> is an attractor of the dynamics (property 1): the system settles onto it by itself, with no external fine-tuning. The correlation is an intrinsic property of the attractor’s structure, not a deliberate arrangement of initial conditions. This is one reason this research values Palmer’s version: it replaces “conspiracy” with a geometric object that can be studied.</p><p><b>Why this research chose it.</b> Of the three superdeterministic approaches, Palmer’s gives the most concrete and computable geometric object: a fractal invariant set. That turns superdeterminism from a philosophical slogan into a mathematical target that can be modeled. This research breaks it into four testable hard properties (high-dimensional / fractal, measure zero / intrinsic cos / differentiable) and tries to approximate such an invariant set with a differentiable surrogate.</p><p><b>The key tension.</b> The invariant set is fractal and non-differentiable everywhere, while a PINN can only optimize differentiable objects. This “fractal vs differentiable” conflict is the project’s hardest deadlock (broken in Stage 5).</p><p>Key reference: T. N. Palmer, <i>The Invariant Set Postulate</i> (2009) and subsequent work.</p>`],
+finetune:["Fine-tuning",`<p>Fine-tuning here refers to the main criticism of superdeterminism: to reproduce the predictions of quantum mechanics, certain parameters or initial conditions must be set “just right”, or the results fail. That “exactly right” is considered too unnatural and too ad hoc (Latin for “for this purpose”: a patch added to get the answer rather than something the theory naturally yields).</p><p><b>What the criticism says.</b> Superdeterminism lets the hidden variable λ be correlated with the settings. Critics (Wood &amp; Spekkens, 2015, is the representative work) point out that for this correlation to reproduce the quantum prediction <b>exactly</b> in every experiment and at every angle, the universe’s initial conditions must be tuned to an almost <b>conspiratorial</b> degree, as if the universe had “colluded” from the start to fool us in every Bell experiment. This is jokingly called superdeterminism’s conspiracy problem.</p><p><b>Why it is a serious charge.</b> A theory that needs a knob turned to a precise value to be right is usually seen as weak in explanation: it does not say why that value, it just inserts the answer. The more fine-tuning, the more the theory looks fitted after the fact, and the less credible it is.</p><p><b>How Palmer’s invariant-set theory answers.</b> It holds that the correlation <b>is not “tuned” by anyone</b> but is an automatic result of a geometric constraint: the universe’s state lies on a fractal invariant set I<sub>U</sub>, and I<sub>U</sub> is an attractor of the dynamics. The system settles onto it by itself, with no need to fine-tune initial conditions. The correlation is an intrinsic property of that attractor’s structure. The “conspiracy” is replaced with a geometric object that can be studied and computed. Hossenfelder &amp; Palmer (2020) wrote specifically on this reply to the fine-tuning charge.</p>`],
+pinn:["PINN",`<p>A PINN (Physics-Informed Neural Network) is a neural network whose loss function directly encodes physical laws.</p><p>An ordinary neural network fits large amounts of data; a PINN requires its output to also satisfy given equations or constraints (for example, a differential-equation residual of zero). The physics that must be obeyed becomes a loss term, approached by gradient descent.</p><p><b>Why this research chose a PINN over other methods</b></p><p>· Compared with pure data fitting (an ordinary network): fitting memorizes the given data points and does not learn the underlying rule. This research needs to solve in reverse for a dynamical rule or invariant set; a PINN writes constraints into the loss and is naturally suited to constrained inverse problems.<br>· Compared with hand analysis or symbolic derivation: analytic methods need a person to guess the form of the equation first, which is nearly hopeless for a fractal with no closed form. A PINN needs no formula in advance and lets the rule emerge in optimization.<br>· Compared with Monte Carlo or direct sampling: sampling can only check the statistics of a given model and cannot optimize the model itself. A PINN is differentiable throughout and can push the model toward the target with gradients.<br>· Compared with symbolic regression (genetic algorithms): symbolic regression gives readable formulas, but its search is discrete, non-differentiable and slow; a PINN is continuous, differentiable and efficient. This research uses both as complements (see Stage 5).</p><p><b>Strengths:</b> constrained inverse solving of rules, differentiable throughout (matching “differentiable” among the four hard properties), and constraints (no-signaling, producing cos, keeping the fractal) can be written directly as loss terms.</p><p><b>Weaknesses / limits:</b> ① a PINN needs differentiability, but a true fractal invariant set is non-differentiable everywhere, the core deadlock Stages 4 and 5 confront; ② its solution is numerical and a black box, unlike the readable formulas of symbolic regression; ③ training can get stuck in local minima and is sensitive to loss weights.</p>`],
+gd:["Gradient descent",`<p>In one sentence: picture the loss L as a landscape (height = L, position = parameters θ). Gradient descent <b>walks down the steepest slope, step by step, to the valley floor</b>.</p><p><b>Gradient</b>: the vector of partial derivatives of the loss with respect to all parameters, pointing in the direction L rises fastest; the opposite direction is where it falls fastest.<br><b>Computing the gradient</b>: evaluate that vector at the current parameters (in neural networks, backpropagation does this automatically).<br><b>Iteration</b>: θ ← θ − η·∇L (η is the step size). Each small step against the gradient lowers L a little; repeating approaches the minimum.</p><p><b>Key precondition</b>: computing the gradient requires L to be <b>differentiable</b> in θ. Without differentiability there is no gradient and the machinery cannot run. This is the root of the conflict between fractals (non-differentiable everywhere) and PINNs.</p>`],
+md:["Measurement dependence",`<p>The degree to which measurement independence is given up.</p>`],
+mi:["Mutual information",`<p>Mutual information (written I) is the standard information-theoretic measure of how strongly two quantities are related, in bits.</p><p>It means: <b>how much uncertainty about one quantity is removed by knowing the other</b>.<br>· I = 0: fully independent; knowing one tells you nothing about the other;<br>· larger I: more related; knowing one lets you predict more of the other.</p><p><b>Its role in this research.</b> Superdeterminism allows the hidden variable λ to be correlated with the settings. The strength of that correlation is quantified exactly by the mutual information I(λ; setting), superdeterminism’s “cheating fuel”: the larger I, the more λ “knows” what will be measured and the more the model relies on measurement dependence. Ideal measurement independence corresponds to I = 0. Hall proved that fully reproducing the singlet needs at least I ≥ 0.0663 bit, which is the project’s theoretical yardstick.</p>`],
+residual:["Consistency residual",`<p>Method ① · Turn a set into a differentiable function via its zero level set.</p><p><b>How do you represent a set differentiably?</b> Instead of drawing its shape, represent it with a differentiable function g<sub>θ</sub>(x) (θ = network parameters), with the convention that <b>points where g<sub>θ</sub>(x) = 0 are in the set and points where g<sub>θ</sub>(x) ≠ 0 are outside</b>. This is the zero-level-set representation: the set is encoded as the zeros of a function that is differentiable everywhere.</p><p><b>Where does the residual come from?</b> An invariant set is defined by: a point x in the set, evolved one step by the dynamics f, is still in the set, f(x). Translated: if x is on the set (g<sub>θ</sub>(x) = 0), then f(x) must be too (g<sub>θ</sub>(f(x)) = 0). The quantity that should be zero but might not be is the residual:</p><pre>r(x) = g_θ(f(x)) − g_θ(x)</pre><p>It measures how far a point drifts off its level set in one step. For a true invariant set, this difference is always 0 for every point on the set.</p><p><b>Why use it as a loss?</b> It turns the geometric question “is this an invariant set?” into a number that can be evaluated and differentiated, with ideal value zero. Averaging the square over sample points gives the loss:</p><pre>L(θ) = (1/N) Σ_i [ g_θ(f(x_i)) − g_θ(x_i) ]²</pre><p>L = 0 exactly when every sample satisfies invariance, so minimizing L pushes the zero level set of g<sub>θ</sub> toward a true invariant set. Both g<sub>θ</sub> and f are differentiable, so L has a gradient in θ and can be minimized directly by gradient descent.</p><p><b>Difficulty: trivial solutions.</b> Used as a training loss, the network collapses to the identity map f(x) = x: loss = 0 with no meaning (the “distribution is invariant” constraint is too weak). In practice a regularizer (for example on the gradient norm of g) is needed to exclude such solutions. This failure of method ① is exactly what motivated methods ②③④, each using a different constraint to avoid trivial solutions.</p>`],
+lyap:["Lyapunov exponents",`<p>Method ② · Describe an attractor’s shape and dimension through the contraction and expansion rates of orbits.</p><p><b>What does a Lyapunov exponent measure?</b> Take two orbits that start extremely close and see whether they separate or converge over time. If the initial gap δ<sub>0</sub> becomes δ<sub>n</sub> after n steps, roughly exponentially as δ<sub>n</sub> ≈ δ<sub>0</sub>·e<sup>λn</sup>, that rate λ is the Lyapunov exponent:</p><pre>λ = lim (1/n) · ln( |δn| / |δ0| )</pre><p>λ &gt; 0: exponential separation (expansion, the mark of chaos); λ &lt; 0: exponential convergence (contraction); λ = 0: neither.</p><p><b>Why one λ per direction?</b> In a high-dimensional system, the stretching rate at one point differs by direction, so each dimension has its own λ, together the Lyapunov spectrum λ<sub>1</sub> ≥ λ<sub>2</sub> ≥ … ≥ λ<sub>d</sub>. An attractor typically contracts in some directions (λ &lt; 0, thickness going to zero) and expands or stays flat in others (λ ≥ 0, spreading along the set). This pattern of signs describes the attractor’s shape.</p><p><b>How to tell a measure-zero fractal (direction → volume → dimension)</b><br>① Direction: along λ &gt; 0 there is extent and thickness; along λ &lt; 0 it is flattened to almost no thickness, which traces the shape.<br>② Volume: if the sum of all λ, Σλ<sub>i</sub> &lt; 0, volume shrinks every step and the point cloud’s volume goes to zero after iteration. That is where “measure zero” comes from, and the mechanism by which dissipative systems make fractals.<br>③ Dimension: the Lyapunov spectrum gives the <b>Kaplan–Yorke dimension</b> (add the λ from largest to smallest and interpolate where the running sum turns from positive to negative), usually a non-integer (e.g. 2.3). A non-integer dimension is the mark of a fractal.</p>`],
+measure:["Invariant measure method",`<p>Method ③ · Instead of describing shape, learn the probability density where the system spends its time in the long run.</p><p><b>A different angle.</b> The first two methods describe what the set looks like. This one asks only how likely the system is to be found at each place in the long run: put a probability density μ(x) at each point of phase space, and that is the invariant measure. The longer orbits linger somewhere, the higher μ is there.</p><p><b>What must μ satisfy?</b> “Invariant” means: evolve the distribution μ one step under f and you get μ back. In operator form it is a fixed point of the transfer (Perron–Frobenius) operator P:</p><pre>P μ = μ</pre><p>Intuition: f keeps moving probability mass around; when it reaches equilibrium and the overall distribution stops changing, that equilibrium distribution is μ.</p>`],
+koopman:["Koopman method",`<p>Method ④ · Turn nonlinear dynamics into a linear operator and get the measure from its spectrum.</p><p><b>Core trick: trade finite-dimensional nonlinearity for infinite-dimensional linearity.</b> The dynamics f is usually nonlinear and hard to analyze. Koopman does not track how state points x move; it tracks how every observable g(x) is carried along. Define the operator (𝒦g)(x) = g(f(x)), which pushes an observable one step forward along the dynamics.</p><p><b>Why is it easier to compute?</b> The key property: 𝒦 is <b>linear</b>. Even if f is highly nonlinear, 𝒦 is linear on function space (at the cost of being infinite-dimensional). Linear means we can talk about its spectrum: 𝒦φ = μ·φ. The leading eigenvector corresponds to the invariant measure, and the other eigenvalues give decay rates and oscillation frequencies. (𝒦 and the transfer operator P of method ③ are adjoint: one moves observables, the other moves distributions.)</p><p><b>Strengths and costs.</b> Strength: no differentiable rule is needed, and singular or fractal measures come directly from the spectrum, useful when derivatives are hard. Cost: spectral methods are sensitive to discretization and truncation and can give plausible-looking but unverified results. This research proactively withdrew unverified data here, preferring to leave a blank rather than report an uncalibrated number (see the methodological rules).</p>`],
+lp:["Convex-optimization cost LP",`<p>A cost yardstick, or referee. It answers one question: to reproduce a given correlation curve, what is the <b>minimum</b> measurement-dependence cost that a no-signaling superdeterministic model must pay?</p><p><b>What is the input?</b> Only one thing: a <b>target correlation curve</b> (a CHSH value S, or a whole E(θ) curve). Note that <b>the input is not your model</b>, only what the curve you want to reproduce looks like.</p><p><b>What is the output?</b> One number: the <b>minimum</b> measurement-dependence mutual information I(λ; setting) needed to reproduce this curve. The minimum is taken over <b>all possible models</b>, so it is the curve’s <b>theoretical lower bound</b>: no model can do cheaper.</p><p><b>How is it computed, and why is it a true lower bound?</b> The decision variable Q[setting, strategy] ranges over all valid probability distributions. The objective, mutual information I, is convex in Q, and all constraints are linear:<br>· normalization: strategy probabilities sum to 1 for each setting;<br>· target: the combined CHSH S equals the target value;<br>· no-signaling: changing one side’s setting does not change the other side’s marginal statistics (enforced structurally, = 0 throughout).<br>Convex objective + linear constraints = convex optimization, so the solver (cvxpy) is guaranteed to find the <b>global minimum</b>, and the output is a hard lower bound, not a local solution. Afterwards S, no-signaling and I are independently recomputed with numpy (the optimizer’s self-report is not trusted).</p>`],
+reader:["CHSH reader",`<p>A “lie detector” function built to prevent misreadings. Given a batch of measurement data (λ, Alice’s outcome, Bob’s outcome), it computes two quantities at once:</p><p><b>① The S value</b>: combined from four correlations, S = E(a,b) + E(a,b′) + E(a′,b) − E(a′,b′), where each E is the average of the product of the two outcomes. S measures correlation strength (classical ≤ 2, quantum ≤ 2√2 ≈ 2.828).</p><p><b>② The no-signaling violation</b>: checks whether Alice’s marginal statistics ⟨A⟩ change with Bob’s setting (and vice versa). 0 means no signaling; larger means more violation.</p><p><b>Why is it needed?</b> The project previously hit angle bugs: some angle combinations (locking Alice’s direction, or choosing the wrong four angles) can make the reading <b>wrongly give S = 0, or let a classical model “reproduce” the result</b>, looking like success while measuring the wrong thing. The reader closes off these misreadings and follows “calibrate first”: quantum reference answers must check out (optimal angles give S ≈ 2.828 with no-signaling ≈ 0) and classical data must give |S| ≤ 2 before it is used.</p>`],
+rules:["Methodological rules",`<p>The project-wide defense against cheating: a discipline for preventing measurement failures (things that look like success but measure the wrong thing). Four core rules:</p><p><b>① Calibrate first</b>: every new tool is first verified on problems with standard answers before being used on problems without answers.<br><b>② Multiple seeds</b>: repeat runs with several random seeds so a lucky single run cannot fool you.<br><b>③ Never conclude from a single run</b>: every conclusion is recomputed several times and from several angles (often independently in numpy, not trusting the optimizer’s or trainer’s self-reported numbers).<br><b>④ Negative results count</b>: a failed or falsified method is valuable too. Record it as it is, withdraw unverified data proactively, never cover it up.</p><p>This discipline is why all 11 measurement failures in the project were <b>caught on the spot</b> and honestly downgraded, instead of carrying wrong conclusions forward. It is the fundamental guarantee that the project’s numbers can be trusted.</p>`],
+ns:["No-signaling",`<p>No-signaling is a floor that both quantum mechanics and relativity must respect: Alice changing her own measurement direction <b>cannot</b> change anything about Bob’s measurement statistics. Otherwise the two could use it to send information instantly, violating relativity (information cannot travel faster than light).</p><p>As a formula: the probability distribution of Bob’s outcomes does not depend on which direction Alice chose (and vice versa).</p><p><b>Why this research cares so much.</b> Superdeterminism allows λ to be correlated with the settings, which makes it easy to “overdo it”. If a model lets one side’s setting quietly affect the other side’s statistics, it becomes a signaling cheat (capable of faster-than-light communication), which is physically forbidden. So the whole project repeatedly uses no-signaling tests to hold this red line: correlations can be strong (even beyond classical), but never signaling.</p>`],
+bloch:["Bloch sphere",`<p>An electron’s spin can be measured along <b>any direction</b> in space. Collect all possible directions and you get a unit sphere: an arrow from the center to any point on the sphere represents a direction. This sphere is the Bloch sphere.</p><p>In this research (Hall’s 2011 model), three things live on this sphere: the hidden variable λ is one arrow, and Alice’s and Bob’s measurement directions are arrows too. The measurement outcome is the sign of the dot product of two arrows: +1 if the angle is less than 90°, −1 if greater.</p>`],
+fib:["Fibonacci sampling",`<p>Convex optimization cannot handle a continuous distribution of λ on the sphere. The sphere must first be replaced by <b>a finite set of representative points</b>, so the problem becomes computable: how much probability to put on each of N points.</p><p>How do you scatter points evenly? An ordinary latitude–longitude grid bunches up at the poles, like meridians on a globe. Fibonacci-sphere sampling imitates the arrangement of sunflower seeds: each new point rotates by the golden angle (about 137.5°) and moves slightly down, spiraling around so that N points cover the whole sphere at nearly equal spacing.</p>`],
+cat:["Arnold cat map",`<p><b>① What the cat map is.</b> A very simple deterministic rule on a torus. Given a point (x, y) (both between 0 and 1, wrapping around at the edges like an old arcade screen where a character leaving on the right reappears on the left), the next step is:</p><pre>x_new = (2x + y) mod 1
+y_new = (x + y) mod 1</pre><p>It is called the “cat map” because Arnold applied it to a picture of a cat: after a few iterations the cat’s face is stretched and folded into what looks like completely random noise. The key point: the rule is fully deterministic. Given (x, y), the next point is unique, with no random numbers. But because it is chaotic (extremely sensitive to initial values; a tiny difference becomes huge within a few steps), in the long run it is indistinguishable from true randomness. That is exactly what superdeterminism wants: determinism that looks random.</p><p><b>② What “evolving from the same initial point z0” means.</b> The code scatters 200,000 initial points z0 = (x0, y0) evenly over the torus. Think of them as 200,000 parallel possible initial conditions of the universe. In superdeterminism the question is never what happens in a single experiment but what the statistics look like across all possible initial conditions. Each z0 is evolved strictly by the cat map.</p><p><b>③ What “read the setting at step T, λ at step T+K” means.</b> Take one z0, evolve it T steps to z<sub>T</sub>, and record its x coordinate (scaled to 0–π) as the “setting”, pretending this is Bob’s chosen angle. Then evolve K more steps to z<sub>T+K</sub> and record its x coordinate (scaled to 0–2π) as λ, the hidden variable.</p>`],
+coord:["Coordinate separation",`<p><b>How it differs from time separation.</b> Shared-origin generation needs to read two numbers, the setting and λ, from one trajectory. There are two ways:</p><p><b>Time separation</b> (see ③ in the Arnold cat map entry): take one initial point z0, evolve T steps and read once (the setting), then evolve K more steps and read again (λ). The two numbers come from <b>the same coordinate</b> at <b>different times</b>.</p><p><b>Coordinate separation</b>: take one evolved point z = (x, y) and, <b>at the same instant</b>, record x as the setting and y as λ. The two numbers come from <b>the same instant</b> but <b>different coordinate components</b>. The correlation no longer comes from the dynamics carrying information between two times, but from x and y being coupled in the evolution rule itself (the cat map’s x<sub>new</sub> contains y, for example).</p><p><b>Why try it.</b> Both readouts satisfy “shared origin” (the setting and λ both come from one trajectory, and the rule never takes the setting explicitly), but they rely on different mechanisms (memory in time vs coupling in space). In practice both give a cost robustly stuck near 2× Hall; coordinate separation is slightly better numerically, so later higher-dimensional work used it.</p>`],
+henon:["Hénon map",`<p>A classic dissipative chaotic map, proposed in 1976 by the French astronomer Michel Hénon as a simplified model for studying chaotic behavior in celestial orbits.</p><pre>x_new = 1 − a·x² + y,   y_new = b·x   (standard a = 1.4, b = 0.3)</pre><p>It is <b>dissipative</b>: each iteration shrinks area, so long-run trajectories contract onto a measure-zero fractal attractor (the Hénon attractor), one of the earliest and best-known strange attractors.</p><p><b>Why it failed in this research.</b> The x² term is an <b>unbounded</b> quadratic: if x strays a little outside its normal range, the next x² amplifies it enormously, and within a few steps x can reach tens of thousands. Running the Hénon map alone (without training) hides this problem. But inside a gradient-training loop with a PINN perturbation, unstable early parameters easily kick x out of the safe region, and there is no coming back: numerical divergence, and training fails.</p>`],
+baker:["Baker map",`<p>A classic chaotic system named after kneading dough: stretch the dough, cut it, stack it, and repeat.</p><p><b>Standard version.</b> In the unit square, the x coordinate is doubled and stretched (×2, folding back past 1, equivalent to mod 1), while the square is cut down the middle and the halves are restacked. That stretch-cut-stack combination is the mathematical version of kneading dough.</p><p><b>The dissipative version used here.</b> Rather than simple folding, the y coordinate (and z in 3D) is compressed into a narrow band depending on whether x falls in the left or right half, leaving a gap in between. Nesting that gap repeatedly forms a Cantor set (a measure-zero fractal).</p><p><b>The key difference from Hénon.</b> Every operation of the baker map is strictly confined to the unit cube [0,1]<sup>n</sup> (mod and compression, no unbounded quadratic term), so it cannot diverge numerically. That is why it replaced Hénon.</p>`]
+};
+var gd=document.getElementById('gloss'), lb=document.getElementById('lb');
+document.addEventListener('click',function(e){
+  var t=e.target.closest('.term');
+  if(t){e.preventDefault();e.stopPropagation();var g=G[t.dataset.g];if(!g)return;
+    document.getElementById('glossT').textContent=g[0];document.getElementById('glossB').innerHTML=g[1];
+    gd.showModal();gd.scrollTop=0;return;}
+  var im=e.target.closest('figure img');
+  if(im){document.getElementById('lbimg').src=im.src;document.getElementById('lbimg').alt=im.alt;lb.showModal();return;}
+  if(e.target.closest('[data-close]')){e.target.closest('dialog').close();return;}
+  if(e.target.tagName==='DIALOG'){e.target.close();}
+});
+document.querySelectorAll('summary .term').forEach(function(t){t.addEventListener('keydown',function(e){e.stopPropagation();});});
+function setAll(open){document.querySelectorAll('details').forEach(function(d){d.open=open;});}
+document.getElementById('expandAll').addEventListener('click',function(){setAll(true);});
+document.getElementById('collapseAll').addEventListener('click',function(){document.querySelectorAll('details.stage').forEach(function(d){d.open=false;});});
+document.querySelectorAll('nav.toc a').forEach(function(a){a.addEventListener('click',function(){var el=document.querySelector(a.getAttribute('href'));if(el&&el.tagName==='DETAILS')el.open=true;});});
+</script>
+
+</body>
+</html>
